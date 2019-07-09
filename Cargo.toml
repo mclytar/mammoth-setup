@@ -4,8 +4,9 @@ version = "0.0.0"
 authors = ["Gianluca (mclytar)"]
 edition = "2018"
 
-description = "Mammoth web-server backend crate"
+description = "Mammoth web-server backend crate."
 license = "MIT"
+repository = "https://github.com/mclytar/mammoth-setup"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
