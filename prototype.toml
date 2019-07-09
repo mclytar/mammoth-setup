@@ -1,0 +1,109 @@
+# ================================================================
+# MAIN SECTION
+# ----------------------------------------------------------------
+# Contains mammoth configuration.
+# ================================================================
+
+# Mandatory.
+[mammoth]
+# Optional as long as there are no [[mod]] objects (see later in this file); otherwise, mandatory.
+# Locates the directory in which mammoth should find all the modules.
+mods_dir = "./mods/"
+# Optional, default: no log.
+# Locates the file in which store the log output.
+log_file = "mammoth.log"
+# Optional, default: "warning"
+# Defines the severity of the log information.
+# File levels are available:
+# - "debug": output every log information, even if potentially sensible.
+# - "information": output almost every log information, discard sensible information.
+# - "warning": output warning information, i.e. for events that could possibly be unexpected or problematic.
+# - "error": output only errors breaking the regular execution.
+# - "critical": output only critical errors, i.e. errors forcing the application to exit with a bad return value.
+log_severity = "warning"
+
+# ================================================================
+# HOST SECTION
+# ----------------------------------------------------------------
+# Contains configuration about the available hosts.
+# ================================================================
+
+# Mandatory (at least one).
+[[host]]
+# Optional, default: no name.
+# Defines the name of the host.
+# If defined, the host accepts only connections from the specified host name (as in virual hosts).
+hostname = "localhost"
+# Mandatory.
+# Defines on which port the current host is listening.
+# Can be written in two variants:
+listen = 80
+# or, if a secure connection is desired,
+listen = { port = 443, secure = true, cert = "./cert.pem", key = "./key.pem" }
+# Optional, default: no static directory.
+# Locates the directory from which serve static files.
+static_dir = "./www/"
+    # Optional, default: no additional modules.
+    # Defines additional modules that can this specific host may require.
+    [[host.mod]]
+    # ... (Module configuration; see [[mod]] later in this file)
+
+# Example of a static host.
+[[host]]
+listen = 8080
+static_dir = "./www/"
+
+# Example of a host containing static files and a request handler.
+[[host]]
+listen = 8080
+static_dir = "./www/"
+    [[host.mod]]
+    name = "req_8080"
+
+# Example of a host in which a particular module is disabled.
+[[host]]
+listen = 8088
+static_dir = "./www/"
+    [[host.mod]]
+    name = "mod_test"
+    # This disables the globally available module "mod_test" for this specific host.
+    enabled = false
+
+# ================================================================
+# MOD SECTION
+# ----------------------------------------------------------------
+# Contains configuration about the available modules.
+# A module is an external dynamic library (.dll in Windows, .so in
+# linux) containing special structures and function that add
+# functionality to Mammoth.
+# ================================================================
+
+# Every module is optional for Mammoth.
+[[mod]]
+# Mandatory, needed to locate the file.
+name = "mod_test"
+# Optional, default: <mammoth.mods_dir>/<mod.name><os_dylib_extension>
+#   example for the above defined mods_dir value:
+#       in Windows:     "./mods/mod_test.dll"
+#       in Linux:       "./mods/mod_test.so"
+# Overrides the standard module location search by specifying an exact location of the library.
+# Here, extension is mandatory.
+location = "./mods/mod_test.dll"
+# Optional, default: true.
+# Determines if the current module is enabled or disabled.
+# Useful when one wants to disable a module without removing it from this configuration file.
+# Moreover, it is useful in host-scope modules when a globally defined module should not be used for a particular host.
+enabled = true
+    # Module configuration, dependant on the module.
+    [mod.config]
+
+# ================================================================
+# ENVIRONMENT SECTION
+# ----------------------------------------------------------------
+# Contains environment variables.
+# ================================================================
+# Optional, default: no environment variables.
+[environment]
+# Custom server setup.
+key = "value"
+other_key = { enabled = true, answer = 42 }
