@@ -1,0 +1,9 @@
+[package]
+name = "mammoth-setup"
+version = "0.0.0"
+authors = ["Gianluca (mclytar)"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
