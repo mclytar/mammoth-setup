@@ -8,6 +8,7 @@ use serde::{Deserialize, Deserializer};
 use serde::de::{MapAccess, Visitor};
 
 // TODO: Remove `failure` crate dependency.
+// TODO: Perhaps add a `validate` function to validate information?
 
 /// Structure that defines configuration for a binding port.
 #[derive(Clone, Debug, PartialEq)]
@@ -93,20 +94,28 @@ impl Binding {
         self.key = Some(key.as_ref().to_path_buf());
     }
     /// Tries to construct a `SslAcceptor` structure from the given certificate and key files.
-    pub fn ssl_acceptor(&self) -> Result<Option<SslAcceptor>, failure::Error> {
+    pub fn ssl_acceptor(&self) -> Result<SslAcceptor, failure::Error> {
         if self.secure {
             let mut ssl_builder = SslAcceptor::mozilla_intermediate(SslMethod::tls())?;
             ssl_builder.set_private_key_file(self.key.as_ref().unwrap(), SslFiletype::PEM)?;
             ssl_builder.set_certificate_chain_file(self.cert.as_ref().unwrap())?;
 
-            Ok(Some(ssl_builder.build()))
+            Ok(ssl_builder.build())
         } else {
-            Ok(None)
+            Err(failure::err_msg("Tried to obtain a SslAcceptor from an insecure binding"))
         }
     }
     /// Obtains an address string from the given port.
     pub fn to_addr_string(&self) -> String {
         format!("0.0.0.0:{}", self.port)
+    }
+    /// Returns a `Result` indicating if the current `Binding` structure is valid.
+    pub fn validate(&self) -> Result<(), failure::Error> {
+        if self.secure {
+            let _ = self.ssl_acceptor()?;
+        }
+
+        Ok(())
     }
 }
 

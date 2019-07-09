@@ -124,7 +124,7 @@ mod tests {
     #[test]
     #[should_panic]
     /// Tests deserialization of an invalid variant.
-    fn test_deserialize_none() {
+    fn test_deserialize_invalid() {
         let _ = toml::from_str::<BTreeMap<String, LogSeverity>>(r#"sr = "dummy""#).unwrap();
     }
 }

@@ -1,13 +1,14 @@
-use std::path::{PathBuf};
+use std::path::{PathBuf, Path};
 
 use toml::Value;
 
 // TODO: Add documentation.
-// TODO: Add `location` support.
 // TODO: Add `load` function.
 // TODO: Are unit tests needed here?
+// TODO: Remove `failure` crate dependency.
+// TODO: Perhaps add a `validate` function to validate information?
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Module {
     name: String,
     location: Option<PathBuf>,
@@ -54,11 +55,9 @@ impl Module {
     pub fn enable(&mut self) {
         self.enabled = true;
     }
-
     pub fn disable(&mut self) {
         self.enabled = false;
     }
-
     pub fn enabled(&self) -> bool {
         self.enabled
     }
@@ -66,12 +65,23 @@ impl Module {
     pub fn config(&self) -> Option<&Value> {
         self.config.as_ref()
     }
-
     pub fn config_mut(&mut self) -> Option<&mut Value> {
         self.config.as_mut()
     }
-
     pub fn into_config(self) -> Option<Value> {
         self.config
+    }
+
+    pub fn location(&self) -> Option<&Path> {
+        self.location.as_ref().and_then(|p| Some(p.as_path()))
+    }
+    pub fn set_location<P>(&mut self, path: P)
+        where
+            P: AsRef<Path>
+    {
+        self.location = Some(path.as_ref().to_path_buf());
+    }
+    pub fn clear_location(&mut self) {
+        self.location = None;
     }
 }

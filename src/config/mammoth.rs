@@ -6,8 +6,10 @@ pub use self::log_severity::LogSeverity;
 
 // TODO: Add documentation.
 // TODO: Are unit tests needed here?
+// TODO: Remove `failure` crate dependency.
+// TODO: Perhaps add a `validate` function to validate information?
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Mammoth {
     mods_dir: Option<PathBuf>,
     log_file: Option<PathBuf>,
