@@ -173,7 +173,7 @@ impl Host {
             if uniques.contains(&m.name()) {
                 Err(failure::err_msg("Duplicate module in host"))?;
             } else {
-                m.validate(mod_path)?;
+                m.validate(mod_path.as_ref())?;
 
                 uniques.push(m.name());
             }

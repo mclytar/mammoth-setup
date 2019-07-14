@@ -59,13 +59,13 @@ impl Mammoth {
     pub fn validate(&self) -> Result<(), failure::Error> {
         if let Some(ref dir) = self.mods_dir {
             if !dir.is_dir() || !dir.exists() {
-                return failure::err_msg("'mods_dir' must be a valid directory");
+                return Err(failure::err_msg("'mods_dir' must be a valid directory"));
             }
         }
 
         if let Some(ref path) = self.log_file {
             if path.is_dir() {
-                return failure::err_msg("'log_file' must be a valid file path");
+                return Err(failure::err_msg("'log_file' must be a valid file path"));
             }
         }
 

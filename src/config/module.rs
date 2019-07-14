@@ -139,7 +139,7 @@ impl Module {
         let lib_path = if let Some(ref path) = self.location {
             path.clone()
         } else {
-            path.as_ref().join(self.name().to_owned() + ".dll");
+            path.as_ref().join(self.name().to_owned() + ".dll")
         };
 
         let _lib = Library::new(&lib_path)?;
