@@ -12,10 +12,10 @@ use std::path::{Path, PathBuf};
 use crate::config::port::Binding;
 use crate::config::module::Module;
 
-// TODO: Add documentation to the `HostIdentifier` structure.
-// TODO: Complete `validate` function.
 // TODO: Remove `failure` crate dependency.
+// TODO: Unit test the `validate` function.
 
+/// Structure that uniquely identifies an `Host` structure within a vector of hosts.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct HostIdentifier {
     hostname: Option<String>,
@@ -32,20 +32,22 @@ pub struct Host {
     mods: Vec<Module>
 }
 
+#[doc(hidden)]
 fn default_mod() -> Vec<Module> { Vec::new() }
 
 impl HostIdentifier {
+    /// Creates a new `HostIdentifier` structure containing the port and the host name, if any.
     pub fn new(port: u16, name: Option<&str>) -> HostIdentifier {
         HostIdentifier {
             hostname: name.and_then(|s| Some(s.to_owned())),
             port
         }
     }
-
+    /// Retrieves the port of the identified host.
     pub fn port(&self) -> u16 {
         self.port
     }
-
+    /// Retrieves the host name of the identified host.
     pub fn name(&self) -> Option<&str> {
         if let Some(ref name) = self.hostname {
             Some(name)
@@ -171,16 +173,7 @@ impl Host {
             if uniques.contains(&m.name()) {
                 Err(failure::err_msg("Duplicate module in host"))?;
             } else {
-                let mod_path = if let Some(loc) = m.location() {
-                    loc.to_path_buf()
-                } else {
-                    mod_path.as_ref().join(m.name().to_owned() + ".dll")
-                };
-
-                // TODO: try to load the library.
-                if !mod_path.is_file() {
-                    Err(failure::err_msg("Module file not found"))?;
-                }
+                m.validate(mod_path)?;
 
                 uniques.push(m.name());
             }

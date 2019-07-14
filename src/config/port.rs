@@ -8,7 +8,8 @@ use serde::{Deserialize, Deserializer};
 use serde::de::{MapAccess, Visitor};
 
 // TODO: Remove `failure` crate dependency.
-// TODO: Perhaps add a `validate` function to validate information?
+// TODO: Unit test the `ssl_acceptor` function.
+// TODO: Unit test the `validate` function.
 
 /// Structure that defines configuration for a binding port.
 #[derive(Clone, Debug, PartialEq)]

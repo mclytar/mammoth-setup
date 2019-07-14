@@ -7,7 +7,6 @@ pub use self::log_severity::LogSeverity;
 // TODO: Add documentation.
 // TODO: Are unit tests needed here?
 // TODO: Remove `failure` crate dependency.
-// TODO: Perhaps add a `validate` function to validate information?
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Mammoth {
@@ -55,5 +54,21 @@ impl Mammoth {
 
     pub fn set_log_severity(&mut self, severity: LogSeverity) {
         self.log_severity = Some(severity);
+    }
+
+    pub fn validate(&self) -> Result<(), failure::Error> {
+        if let Some(ref dir) = self.mods_dir {
+            if !dir.is_dir() || !dir.exists() {
+                return failure::err_msg("'mods_dir' must be a valid directory");
+            }
+        }
+
+        if let Some(ref path) = self.log_file {
+            if path.is_dir() {
+                return failure::err_msg("'log_file' must be a valid file path");
+            }
+        }
+
+        Ok(())
     }
 }
