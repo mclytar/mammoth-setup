@@ -7,7 +7,10 @@ use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use serde::{Deserialize, Deserializer};
 use serde::de::{MapAccess, Visitor};
 
-// TODO: Remove `failure` crate dependency.
+use crate::error::{event, Error};
+use crate::error::event::Event;
+use crate::error::validate::Validate;
+
 // TODO: Unit test the `ssl_acceptor` function.
 // TODO: Unit test the `validate` function.
 
@@ -95,7 +98,7 @@ impl Binding {
         self.key = Some(key.as_ref().to_path_buf());
     }
     /// Tries to construct a `SslAcceptor` structure from the given certificate and key files.
-    pub fn ssl_acceptor(&self) -> Result<SslAcceptor, failure::Error> {
+    pub fn ssl_acceptor(&self) -> Result<SslAcceptor, Error> {
         if self.secure {
             let mut ssl_builder = SslAcceptor::mozilla_intermediate(SslMethod::tls())?;
             ssl_builder.set_private_key_file(self.key.as_ref().unwrap(), SslFiletype::PEM)?;
@@ -103,20 +106,26 @@ impl Binding {
 
             Ok(ssl_builder.build())
         } else {
-            Err(failure::err_msg("Tried to obtain a SslAcceptor from an insecure binding"))
+            Err(Error::SecureBindOnInsecure)
         }
     }
     /// Obtains an address string from the given port.
     pub fn to_addr_string(&self) -> String {
         format!("0.0.0.0:{}", self.port)
     }
-    /// Returns a `Result` indicating if the current `Binding` structure is valid.
-    pub fn validate(&self) -> Result<(), failure::Error> {
+}
+
+impl Validate<()> for Binding {
+    fn validate(&self, _: ()) -> Vec<Event> {
+        let mut events = Vec::new();
+
         if self.secure {
-            let _ = self.ssl_acceptor()?;
+            if let Err(err) = self.ssl_acceptor() {
+                events.push(event::critical_error("error while requesting a secure connection", err));
+            }
         }
 
-        Ok(())
+        events
     }
 }
 

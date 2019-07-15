@@ -11,8 +11,12 @@ use std::path::{Path, PathBuf};
 
 use crate::config::port::Binding;
 use crate::config::module::Module;
+use crate::error::{event, Error};
+use crate::error::event::Event;
+use crate::error::validate::{Validate, PathErrorKind, PathValidator};
+use crate::error::severity::Severity;
 
-// TODO: Remove `failure` crate dependency.
+// TODO: Complete `validate` function.
 // TODO: Unit test the `validate` function.
 
 /// Structure that uniquely identifies an `Host` structure within a vector of hosts.
@@ -152,34 +156,37 @@ impl Host {
 
         false
     }
-    /// Returns a `Result` indicating if the current `Host` structure is valid.
-    pub fn validate<P>(&self, mod_path: P) -> Result<(), failure::Error>
-        where
-            P: AsRef<Path>
-    {
-        self.listen.validate()?;
+}
+
+impl<V> Validate<V> for Host
+    where
+        V: AsRef<Path>
+{
+    fn validate(&self, mod_path: V) -> Vec<Event> {
+        let mut events = Vec::new();
+
+        events.append(&mut self.listen.validate(()));
 
         // TODO: check hostname against regex "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"
         // TODO: check hostname against regex "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"
 
-        if let Some(ref static_dir) = self.static_dir {
-            if !static_dir.is_dir() {
-                Err(failure::err_msg("Parameter 'static_dir' is not a valid directory"))?;
-            }
-        }
+        events.append(&mut self.static_dir.validate(PathValidator(PathErrorKind::Directory, Severity::Error)));
 
         let mut uniques = Vec::new();
         for m in self.mods.iter() {
             if uniques.contains(&m.name()) {
-                Err(failure::err_msg("Duplicate module in host"))?;
+                events.push(event::critical_error(
+                    "found module declared twice",
+                    Error::DuplicateModule(m.name().to_owned())
+                ));
             } else {
-                m.validate(mod_path.as_ref())?;
+                events.append(&mut m.validate(mod_path.as_ref()));
 
                 uniques.push(m.name());
             }
         }
 
-        Ok(())
+        events
     }
 }
 

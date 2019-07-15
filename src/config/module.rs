@@ -5,6 +5,8 @@
 //! The main entry point is a `__construct` function that loads all the needed configuration.
 //! The simplest module is as follows.
 //! ```rust
+//! use mammoth_setup::MammothInterface;
+//!
 //! struct LibraryModule {
 //!     /* fields omitted */
 //! }
@@ -16,7 +18,7 @@
 //! fn __construct() -> *mut MammothInterface {
 //!     let interface = LibraryModule { /* ... */ };
 //!     /* initialization omitted */
-//!     let interface = Box::new(LibraryModule);
+//!     let interface = Box::new(interface);
 //!     let interface = Box::into_raw(interface);
 //!     interface
 //! }
@@ -26,9 +28,14 @@
 //! function and a `__validate` function).
 
 use std::path::{PathBuf, Path};
+use std::sync::Arc;
 
-use libloading::Library;
+use libloading::{Library, Symbol};
 use toml::Value;
+
+use crate::MammothInterface;
+use crate::error::event::Event;
+use crate::error::validate::{Validate, PathErrorKind};
 
 // TODO: Add `load` function.
 // TODO: Are unit tests needed here?
@@ -125,27 +132,50 @@ impl Module {
     pub fn clear_location(&mut self) {
         self.location = None;
     }
-
-    /// Returns a `Result` indicating if the current `Module` structure is valid and points to a
-    /// valid library (if enabled).
-    pub fn validate<P>(&self, path: P) -> Result<(), failure::Error>
+    /// Tries to load the library.
+    pub fn load<P>(&self, path: P) -> Result<(), failure::Error>
         where
             P: AsRef<Path>
     {
-        if !self.enabled {
-            return Ok(());
-        }
-
         let lib_path = if let Some(ref path) = self.location {
             path.clone()
         } else {
             path.as_ref().join(self.name().to_owned() + ".dll")
         };
 
-        let _lib = Library::new(&lib_path)?;
+        let library = Library::new(&lib_path)?;
 
-        // TODO: try to load the important library functions.
+        let interface = unsafe {
+            let constructor: Symbol<fn() -> *mut MammothInterface> = library.get(b"__construct")?;
+            Arc::new(Box::from_raw(constructor()))
+        };
 
-        Ok(())
+        interface.on_load(self.config());
+
+        unimplemented!()
+    }
+}
+
+impl<V> Validate<V> for Module
+    where
+        V: AsRef<Path>
+{
+    fn validate(&self, path: V) -> Vec<Event> {
+        let mut events = Vec::new();
+
+        if self.enabled {
+            let _lib_path = if let Some(ref path) = self.location {
+                path.clone()
+            } else {
+                path.as_ref().join(self.name().to_owned() + ".dll")
+            };
+
+            // TODO: handle library validation.
+            //let _lib = Library::new(&lib_path)?;
+
+            // TODO: try to load the important library functions.
+        }
+
+        events
     }
 }

@@ -21,6 +21,7 @@ Items beginning with [...] have more sub-tasks, possibly depending on the previo
     - [ ] Complete `config/port`
     - [ ] Finalize
     - [ ] Version 0.0.1
+- [ ] [...] Add error management.
 - [ ] [...] Add the module handling logic.
     - [ ] [...] Add version control system for dynamic libraries.
 - [ ] [...] Add the server construction logic.

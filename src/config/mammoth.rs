@@ -1,18 +1,17 @@
-mod log_severity;
-
 use std::path::{Path, PathBuf};
 
-pub use self::log_severity::LogSeverity;
+use crate::error::event::Event;
+use crate::error::severity::Severity;
+use crate::error::validate::{Validate, PathErrorKind, PathValidator};
 
 // TODO: Add documentation.
 // TODO: Are unit tests needed here?
-// TODO: Remove `failure` crate dependency.
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Mammoth {
     mods_dir: Option<PathBuf>,
     log_file: Option<PathBuf>,
-    log_severity: Option<LogSeverity>
+    log_severity: Option<Severity>
 }
 
 impl Mammoth {
@@ -34,7 +33,7 @@ impl Mammoth {
         else { None }
     }
 
-    pub fn log_severity(&self) -> Option<LogSeverity> {
+    pub fn log_severity(&self) -> Option<Severity> {
         self.log_severity
     }
 
@@ -52,23 +51,18 @@ impl Mammoth {
         self.log_file = Some(path.as_ref().to_path_buf());
     }
 
-    pub fn set_log_severity(&mut self, severity: LogSeverity) {
+    pub fn set_log_severity(&mut self, severity: Severity) {
         self.log_severity = Some(severity);
     }
+}
 
-    pub fn validate(&self) -> Result<(), failure::Error> {
-        if let Some(ref dir) = self.mods_dir {
-            if !dir.is_dir() || !dir.exists() {
-                return Err(failure::err_msg("'mods_dir' must be a valid directory"));
-            }
-        }
+impl Validate<()> for Mammoth {
+    fn validate(&self, _: ()) -> Vec<Event> {
+        let mut events = Vec::new();
 
-        if let Some(ref path) = self.log_file {
-            if path.is_dir() {
-                return Err(failure::err_msg("'log_file' must be a valid file path"));
-            }
-        }
+        events.append(&mut self.mods_dir.validate(PathValidator(PathErrorKind::Directory, Severity::Critical)));
+        events.append(&mut self.log_file.validate(PathValidator(PathErrorKind::FilePath, Severity::Critical)));
 
-        Ok(())
+        events
     }
 }
