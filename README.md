@@ -18,7 +18,7 @@ Items beginning with [...] have more sub-tasks, possibly depending on the previo
     - [ ] Complete `config/host`
     - [ ] Complete `config/mammoth`
     - [ ] Complete `config/module`
-    - [ ] Complete `config/port`
+    - [x] Complete `config/port`
     - [ ] Finalize
     - [ ] Version 0.0.1
 - [ ] [...] Add error management.

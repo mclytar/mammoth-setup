@@ -11,9 +11,6 @@ use crate::error::{event, Error};
 use crate::error::event::Event;
 use crate::error::validate::Validate;
 
-// TODO: Unit test the `ssl_acceptor` function.
-// TODO: Unit test the `validate` function.
-
 /// Structure that defines configuration for a binding port.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Binding {
@@ -242,6 +239,7 @@ mod test {
     use std::path::Path;
 
     use super::Binding;
+    use crate::error::validate::Validate;
 
     #[test]
     /// Tests parameters handling.
@@ -406,5 +404,19 @@ mod test {
         assert_eq!(param_sec.to_addr_string(), "0.0.0.0:443");
     }
 
-    // TODO: ssl_acceptor is still untested.
+    #[test]
+    /// Tests Ssl acceptor from `Binding`.
+    fn test_ssl_acceptor() {
+        // Generate a ssl key/cert pair with the following command:
+        // openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=localhost"
+        let param_ssl = Binding::with_security(8443, "./test_cert.pem", "./test_key.pem");
+        let acceptor = param_ssl.ssl_acceptor().unwrap();
+    }
+
+    #[test]
+    fn test_validate() {
+        let param_ssl = Binding::with_security(8443, "./test_cert.pem", "./test_key.pem");
+
+        assert_eq!(param_ssl.validate(()).len(), 0);
+    }
 }
