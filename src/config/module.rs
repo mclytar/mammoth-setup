@@ -6,9 +6,19 @@
 //! The simplest module is as follows.
 //! ```rust
 //! use mammoth_setup::MammothInterface;
+//! use mammoth_setup::error::event::Event;
+//! use mammoth_setup::error::validate::Validate;
+//! use toml::Value;
 //!
 //! struct LibraryModule {
 //!     /* fields omitted */
+//! }
+//!
+//! impl Validate<Option<Value>> for LibraryModule {
+//!     fn validate(&self, _: Option<Value>) -> Vec<Event> {
+//!         // Validate here the configuration.
+//!         unimplemented!()
+//!     }
 //! }
 //!
 //! impl MammothInterface for LibraryModule {
@@ -35,7 +45,7 @@ use toml::Value;
 
 use crate::MammothInterface;
 use crate::error::event::Event;
-use crate::error::validate::{Validate, PathErrorKind};
+use crate::error::validate::Validate;
 
 // TODO: Add `load` function.
 // TODO: Are unit tests needed here?
@@ -161,7 +171,7 @@ impl<V> Validate<V> for Module
         V: AsRef<Path>
 {
     fn validate(&self, path: V) -> Vec<Event> {
-        let mut events = Vec::new();
+        let events = Vec::new();
 
         if self.enabled {
             let _lib_path = if let Some(ref path) = self.location {

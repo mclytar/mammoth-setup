@@ -9,7 +9,8 @@ use serde::de::{MapAccess, Visitor};
 
 use crate::error::{event, Error};
 use crate::error::event::Event;
-use crate::error::validate::Validate;
+use crate::error::validate::{Validate, PathValidator, PathErrorKind};
+use crate::error::severity::Severity;
 
 /// Structure that defines configuration for a binding port.
 #[derive(Clone, Debug, PartialEq)]
@@ -117,6 +118,9 @@ impl Validate<()> for Binding {
         let mut events = Vec::new();
 
         if self.secure {
+            events.append(&mut self.cert.validate(PathValidator(PathErrorKind::FileExists, Severity::Error)));
+            events.append(&mut self.key.validate(PathValidator(PathErrorKind::FileExists, Severity::Error)));
+
             if let Err(err) = self.ssl_acceptor() {
                 events.push(event::critical_error("error while requesting a secure connection", err));
             }

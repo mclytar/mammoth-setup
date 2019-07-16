@@ -10,7 +10,8 @@ pub trait Validate<V> {
 
 pub enum PathErrorKind {
     Directory,
-    FilePath
+    FileExists,
+    FilePath,
 }
 
 pub struct PathValidator(pub PathErrorKind, pub Severity);
@@ -24,6 +25,9 @@ impl Validate<PathValidator> for PathBuf {
             PathErrorKind::Directory => if !self.is_dir() || !self.exists() {
                 events.push(Event::with_error("not a valid directory", s, Error::InvalidDirectory(self.clone())));
             },
+            PathErrorKind::FileExists => if !self.is_file() || !self.exists() {
+                events.push(Event::with_error("file does not exists", s, Error::FileNotFound(self.clone())));
+            }
             PathErrorKind::FilePath => if !self.is_file() {
                 events.push(Event::with_error("not a valid file path", s, Error::InvalidFilePath(self.clone())));
             }

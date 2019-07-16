@@ -6,8 +6,9 @@
 //! but only the port/hostname pair.
 //!
 //! Only one host is allowed per port/hostname pair.
-
 use std::path::{Path, PathBuf};
+
+use regex::Regex;
 
 use crate::config::port::Binding;
 use crate::config::module::Module;
@@ -16,8 +17,8 @@ use crate::error::event::Event;
 use crate::error::validate::{Validate, PathErrorKind, PathValidator};
 use crate::error::severity::Severity;
 
-// TODO: Complete `validate` function.
-// TODO: Unit test the `validate` function.
+const REGEX_NAME_ADDRESS_STRING: &str = r#"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"#;
+const REGEX_IP_ADDRESS_STRING: &str = r#"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"#;
 
 /// Structure that uniquely identifies an `Host` structure within a vector of hosts.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
@@ -67,6 +68,20 @@ impl Host {
         Host {
             hostname: None,
             listen: Binding::new(port),
+            static_dir: None,
+            mods: Vec::new()
+        }
+    }
+    /// Creates a new `Host` structure with a secure binding on the specified `port` and the
+    /// specified `cert`, `key`.
+    pub fn with_security<P, Q>(port: u16, cert: P, key: Q) -> Host
+        where
+            P: AsRef<Path>,
+            Q: AsRef<Path>
+    {
+        Host {
+            hostname: None,
+            listen: Binding::with_security(port, cert, key),
             static_dir: None,
             mods: Vec::new()
         }
@@ -163,12 +178,23 @@ impl<V> Validate<V> for Host
         V: AsRef<Path>
 {
     fn validate(&self, mod_path: V) -> Vec<Event> {
+        lazy_static! {
+            static ref RE_IP: Regex = Regex::new(REGEX_IP_ADDRESS_STRING).unwrap();
+            static ref RE_ADDR: Regex = Regex::new(REGEX_NAME_ADDRESS_STRING).unwrap();
+        }
+
         let mut events = Vec::new();
 
         events.append(&mut self.listen.validate(()));
 
-        // TODO: check hostname against regex "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"
-        // TODO: check hostname against regex "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"
+        if let Some(ref name) = self.hostname {
+            if !RE_IP.is_match(name) && !RE_ADDR.is_match(name) {
+                events.push(event::critical_error(
+                    "invalid hostname",
+                    Error::InvalidHostname(name.to_owned())
+                ));
+            }
+        }
 
         events.append(&mut self.static_dir.validate(PathValidator(PathErrorKind::Directory, Severity::Error)));
 
@@ -176,7 +202,7 @@ impl<V> Validate<V> for Host
         for m in self.mods.iter() {
             if uniques.contains(&m.name()) {
                 events.push(event::critical_error(
-                    "found module declared twice",
+                    "module declared twice",
                     Error::DuplicateModule(m.name().to_owned())
                 ));
             } else {
@@ -202,11 +228,11 @@ mod test {
     fn test_binding() {
         let mut host = Host::new(80);
         let binding = Binding::new(80);
-        let binding_sec = Binding::with_security(443, "./cert.pem", "./key.pem");
+        let binding_ssl = Binding::with_security(443, "./cert.pem", "./key.pem");
         assert_eq!(host.binding(), &binding);
 
-        host.set_binding(binding_sec.clone());
-        assert_eq!(host.binding(), &binding_sec);
+        host.set_binding(binding_ssl.clone());
+        assert_eq!(host.binding(), &binding_ssl);
     }
 
     #[test]
@@ -261,5 +287,24 @@ mod test {
 
         assert_eq!(host.has_module("mod_dummy"), false);
         assert_eq!(host.has_module("mod_test"), true);
+    }
+
+    #[test]
+    /// Tests the `validate` function.
+    fn test_validate() {
+        use super::Validate;
+        let host = Host::new(80);
+        let host_ssl = Host::with_security(443, "./test_cert.pem", "./test_key.pem");
+        let host_err = Host::with_security(443, "./err_cert.pem", "./err_key.pem");
+        let mut host_named = Host::new(80);
+        let mut host_named_err = Host::new(80);
+        host_named.set_name("localhost");
+        host_named_err.set_name("invalid@name");
+
+        assert_eq!(host.validate("./mods/").len(), 0);
+        assert_eq!(host_ssl.validate("./mods/").len(), 0);
+        assert_eq!(host_err.validate("./mods/").len(), 3);
+        assert_eq!(host_named.validate("./mods/").len(), 0);
+        assert_eq!(host_named_err.validate("./mods/").len(), 1);
     }
 }
