@@ -410,7 +410,7 @@ mod test {
         // Generate a ssl key/cert pair with the following command:
         // openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=localhost"
         let param_ssl = Binding::with_security(8443, "./test_cert.pem", "./test_key.pem");
-        let acceptor = param_ssl.ssl_acceptor().unwrap();
+        let _ = param_ssl.ssl_acceptor().unwrap();
     }
 
     #[test]
