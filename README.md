@@ -10,18 +10,20 @@ The project is based on the [actix-web](https://github.com/actix/actix-web) fram
 ## To-Do list
 
 This is the initial To-Do list for the project.
-Items beginning with [...] have more sub-tasks, possibly depending on the previous tasks.
+Items beginning with [...] have more hidden/non-definitive sub-tasks, possibly depending on the previous tasks.
 
 - [x] Add a `TOML` prototype of the possible configuration file.
 - [ ] Add the basic definitions for the configuration file.
-    - [x] Complete `config/mammoth/log_severity`
-    - [ ] Complete `config/host`
-    - [ ] Complete `config/mammoth`
-    - [ ] Complete `config/module`
+    - [x] Complete `error/severity`
+    - [ ] Complete `config`
+    - [x] Complete `config/host`
+    - [x] Complete `config/mammoth`
+    - [x] Complete `config/module`
     - [x] Complete `config/port`
     - [ ] Finalize
     - [ ] Version 0.0.1
 - [ ] [...] Add error management.
+    - [ ] [...] Add logging system.
 - [ ] [...] Add the module handling logic.
     - [ ] [...] Add version control system for dynamic libraries.
 - [ ] [...] Add the server construction logic.

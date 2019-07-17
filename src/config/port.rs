@@ -12,6 +12,8 @@ use crate::error::event::Event;
 use crate::error::validate::{Validate, PathValidator, PathErrorKind};
 use crate::error::severity::Severity;
 
+// FOR_LATER: implement the `Log` trait.
+
 /// Structure that defines configuration for a binding port.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Binding {

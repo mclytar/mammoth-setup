@@ -40,17 +40,17 @@
 use std::path::{PathBuf, Path};
 use std::sync::Arc;
 
-use libloading::{Library, Symbol};
+use libloading::Symbol;
 use toml::Value;
 
 use crate::MammothInterface;
 use crate::error::event::Event;
 use crate::error::validate::Validate;
+use crate::loaded::library::LoadedModuleSet;
 
-// TODO: Add `load` function.
-// TODO: Are unit tests needed here?
-// TODO: Remove `failure` crate dependency.
-// TODO: Complete `validate` function.
+// WARNING: untested functions.
+// WARNING: `load_into` function is not tested for now (needs a library).
+// FOR_LATER: implement the `Log` trait.
 
 /// Structure that defines configuration for a module library.
 #[derive(Clone, Debug, Deserialize)]
@@ -143,17 +143,15 @@ impl Module {
         self.location = None;
     }
     /// Tries to load the library.
-    pub fn load<P>(&self, path: P) -> Result<(), failure::Error>
-        where
-            P: AsRef<Path>
+    pub fn load_into(&self, mod_set: &mut LoadedModuleSet) -> Result<(), failure::Error>
     {
         let lib_path = if let Some(ref path) = self.location {
             path.clone()
         } else {
-            path.as_ref().join(self.name().to_owned() + ".dll")
+            mod_set.lib_path(self.name())
         };
 
-        let library = Library::new(&lib_path)?;
+        let library = &mod_set.load(lib_path)?.library;
 
         let interface = unsafe {
             let constructor: Symbol<fn() -> *mut MammothInterface> = library.get(b"__construct")?;
@@ -162,30 +160,8 @@ impl Module {
 
         interface.on_load(self.config());
 
-        unimplemented!()
-    }
-}
+        mod_set.insert(self.name(), interface);
 
-impl<V> Validate<V> for Module
-    where
-        V: AsRef<Path>
-{
-    fn validate(&self, path: V) -> Vec<Event> {
-        let events = Vec::new();
-
-        if self.enabled {
-            let _lib_path = if let Some(ref path) = self.location {
-                path.clone()
-            } else {
-                path.as_ref().join(self.name().to_owned() + ".dll")
-            };
-
-            // TODO: handle library validation.
-            //let _lib = Library::new(&lib_path)?;
-
-            // TODO: try to load the important library functions.
-        }
-
-        events
+        Ok(())
     }
 }

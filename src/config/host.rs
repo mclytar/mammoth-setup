@@ -20,6 +20,8 @@ use crate::error::severity::Severity;
 const REGEX_NAME_ADDRESS_STRING: &str = r#"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"#;
 const REGEX_IP_ADDRESS_STRING: &str = r#"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"#;
 
+// FOR_LATER: implement the `Log` trait.
+
 /// Structure that uniquely identifies an `Host` structure within a vector of hosts.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct HostIdentifier {
@@ -206,7 +208,8 @@ impl<V> Validate<V> for Host
                     Error::DuplicateModule(m.name().to_owned())
                 ));
             } else {
-                events.append(&mut m.validate(mod_path.as_ref()));
+                // FOR_LATER: Implementation in `Log`.
+                //events.append(&mut m.validate(mod_path.as_ref()));
 
                 uniques.push(m.name());
             }

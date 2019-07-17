@@ -72,11 +72,11 @@ impl Serialize for Severity {
 impl Display for Severity {
     fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
         match &self {
-            Severity::Debug => write!(f, "DEBUG"),
+            Severity::Debug => write!(f, "DBG "),
             Severity::Information => write!(f, "INFO"),
             Severity::Warning => write!(f, "WARN"),
-            Severity::Error => write!(f, "ERROR"),
-            Severity::Critical => writeln!(f, "CRITICAL")
+            Severity::Error => write!(f, "ERR "),
+            Severity::Critical => writeln!(f, "CRIT")
         }
     }
 }
