@@ -4,6 +4,45 @@ use super::Error;
 use super::event::Event;
 use super::severity::Severity;
 
+// TODO: Revisit better this part
+
+pub trait Logger {
+    fn log(&mut self, _: Severity, _: &str);
+}
+
+impl Logger for Vec<Event> {
+    fn log(&mut self, severity: Severity, description: &str) {
+        self.push(Event::new(description, severity));
+    }
+}
+
+pub trait Log<A>
+{
+    fn validate<L>(&self, _: &mut L, _: A) where L: Logger;
+    fn check(&self, aux: A) -> Vec<Event> {
+        let mut events = Vec::new();
+        self.validate(&mut events, aux);
+        events
+    }
+}
+
+pub trait Id {
+    type Index: Eq;
+
+    fn id(&self) -> Self::Index;
+}
+
+impl<T> Id for T
+    where
+        T: Eq + Copy
+{
+    type Index = Self;
+
+    fn id(&self) -> Self::Index {
+        *self
+    }
+}
+
 pub trait Validate<V> {
     fn validate(&self, _: V) -> Vec<Event>;
 }
