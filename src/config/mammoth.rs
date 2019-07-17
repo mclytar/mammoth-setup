@@ -8,7 +8,7 @@ use crate::error::validate::{Validate, PathErrorKind, PathValidator};
 
 // FOR_LATER: implement the `Log` trait.
 
-/// Structure that defines configuration for the Mammoth application.
+/// Structure that defines the general configuration for the Mammoth application.
 #[derive(Clone, Debug, Deserialize)]
 pub struct Mammoth {
     mods_dir: Option<PathBuf>,

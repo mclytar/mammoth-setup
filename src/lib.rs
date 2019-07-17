@@ -11,11 +11,9 @@ use std::any::Any;
 
 use toml::Value;
 
-use crate::error::validate::Validate;
-
 /// Trait that contains the functions that should be implemented by a module or a handler.
 // TODO: find the best validator type.
-pub trait MammothInterface: Any + Send + Sync + Validate<Option<Value>> {
+pub trait MammothInterface: Any + Send + Sync {
     /// Function that is called when the library is loaded.
     fn on_load(&self, _cfg: Option<&Value>) {}
     // Function that is called during the construction of the server.

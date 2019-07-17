@@ -44,12 +44,11 @@ use libloading::Symbol;
 use toml::Value;
 
 use crate::MammothInterface;
-use crate::error::event::Event;
-use crate::error::validate::Validate;
 use crate::loaded::library::LoadedModuleSet;
 
 // WARNING: untested functions.
 // WARNING: `load_into` function is not tested for now (needs a library).
+// FOR_LATER: Remove `failure` crate dependency.
 // FOR_LATER: implement the `Log` trait.
 
 /// Structure that defines configuration for a module library.

@@ -179,7 +179,7 @@ impl<V> Validate<V> for Host
     where
         V: AsRef<Path>
 {
-    fn validate(&self, mod_path: V) -> Vec<Event> {
+    fn validate(&self, _mod_path: V) -> Vec<Event> {
         lazy_static! {
             static ref RE_IP: Regex = Regex::new(REGEX_IP_ADDRESS_STRING).unwrap();
             static ref RE_ADDR: Regex = Regex::new(REGEX_NAME_ADDRESS_STRING).unwrap();

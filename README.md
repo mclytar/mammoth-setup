@@ -15,12 +15,13 @@ Items beginning with [...] have more hidden/non-definitive sub-tasks, possibly d
 - [x] Add a `TOML` prototype of the possible configuration file.
 - [ ] Add the basic definitions for the configuration file.
     - [x] Complete `error/severity`
-    - [ ] Complete `config`
+    - [x] Complete `config`
     - [x] Complete `config/host`
     - [x] Complete `config/mammoth`
     - [x] Complete `config/module`
     - [x] Complete `config/port`
     - [ ] Finalize
+        - [ ] Complete and finalize the (first version of the) `MammothInterface` trait definition (needed in order to construct libraries to perform tests).
     - [ ] Version 0.0.1
 - [ ] [...] Add error management.
     - [ ] [...] Add logging system.

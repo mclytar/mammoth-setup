@@ -1,3 +1,5 @@
+//! The `ConfigurationFile` structure contains the configuration for the entire Mammoth application.
+
 pub mod host;
 pub mod mammoth;
 pub mod port;
@@ -14,10 +16,11 @@ pub use self::host::HostIdentifier;
 pub use self::mammoth::Mammoth;
 pub use self::module::Module;
 
-// TODO: Add tests.
-// TODO: Remove `failure` crate dependency.
-// TODO: Perhaps add a `validate` function to validate information?
+// FOR_LATER: Add tests.
+// FOR_LATER: Remove `failure` crate dependency.
+// FOR_LATER: implement the `Log` trait.
 
+/// Structure that contains all the configuration for the Mammoth application.
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigurationFile {
     mammoth: Mammoth,
@@ -28,9 +31,11 @@ pub struct ConfigurationFile {
     environment: Option<Value>
 }
 
+#[doc(hidden)]
 fn default_mods() -> Vec<Module> { Vec::new() }
 
 impl ConfigurationFile {
+    /// Creates a `ConfigurationFile` structure given a TOML file.
     pub fn from_file<P>(path: P) -> Result<ConfigurationFile, failure::Error>
         where
             P: AsRef<Path>
@@ -42,30 +47,34 @@ impl ConfigurationFile {
 
         Ok(toml::from_str(&contents)?)
     }
-
+    /// Creates a `ConfigurationFile` structure given a TOML string.
     pub fn from_str(contents: &str) -> Result<ConfigurationFile, failure::Error> {
         Ok(toml::from_str(contents)?)
     }
-
+    /// Obtains the underlying `Mammoth` structure.
     pub fn mammoth(&self) -> &Mammoth {
         &self.mammoth
     }
     pub fn mammoth_mut(&mut self) -> &mut Mammoth {
         &mut self.mammoth
     }
-
+    /// Obtains a vector of references to the hosts.
     pub fn hosts(&self) -> Vec<&Host> {
         self.hosts.iter().collect()
     }
+    /// Obtains a vector of mutable references to the hosts.
     pub fn hosts_mut(&mut self) -> Vec<&mut Host> {
         self.hosts.iter_mut().collect()
     }
+    /// Adds an host.
     pub fn add_host(&mut self, host: Host) {
         self.hosts.push(host);
     }
+    /// Removes an host by its id.
     pub fn remove_host(&mut self, id: HostIdentifier) {
         self.hosts.retain(|h| !h.is(&id));
     }
+    /// Returns `true` if the current structure has the specified host and `false` otherwise.
     pub fn has_host(&mut self, id: HostIdentifier) -> bool {
         self.hosts.iter().position(|h| h.is(&id)).is_some()
     }
