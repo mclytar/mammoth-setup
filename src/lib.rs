@@ -6,19 +6,20 @@ extern crate serde_derive;
 pub mod config;
 pub mod error;
 pub mod loaded;
+pub mod log;
 pub mod version;
 
 use std::any::Any;
 
 use toml::Value;
 
+use crate::log::Log;
+
 #[cfg(feature = "mammoth_module")]
 pub use mammoth_macro::mammoth_module;
 
-// TODO: complete and apply the `Log` trait to the `MammothInterface` trait.
-
 /// Trait that contains the functions that should be implemented by a module or a handler.
-pub trait MammothInterface: Any + Send + Sync {
+pub trait MammothInterface: Any + Send + Sync + Log<Aux=Option<Value>> {
     /// Function that is called when the library is loaded.
     fn on_load(&self, _: Option<&Value>) {}
     // FOR_LATER: load Actix crate and uncomment the following.

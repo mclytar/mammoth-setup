@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
@@ -5,7 +6,7 @@ use serde::de::{Deserialize, Deserializer, Error, Unexpected, Visitor};
 use serde::ser::{Serialize, Serializer};
 
 /// Describes the severity of the Log report.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Severity {
     /// The log should output every useful and technical information.
     ///
@@ -87,6 +88,31 @@ impl Default for Severity {
     }
 }
 
+impl PartialOrd for Severity {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Severity {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if self == other { return Ordering::Equal; }
+
+        use Severity::*;
+
+        match (self, other) {
+            (Debug, _) => Ordering::Less,
+            (Information, Debug) => Ordering::Greater,
+            (Information, _) => Ordering::Less,
+            (Warning, Debug) | (Warning, Information) => Ordering::Greater,
+            (Warning, _) => Ordering::Less,
+            (Error, Critical) => Ordering::Less,
+            (Error, _) => Ordering::Greater,
+            (Critical, _) => Ordering::Greater
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -131,6 +157,45 @@ mod tests {
         assert_eq!(toml::from_str::<BTreeMap<String, Severity>>(r#"sr = "critical""#).unwrap().get("sr").unwrap().to_owned(), Severity::Critical);
         assert_eq!(toml::from_str::<BTreeMap<String, Severity>>(r#"sr = "Critical""#).unwrap().get("sr").unwrap().to_owned(), Severity::Critical);
         assert_eq!(toml::from_str::<BTreeMap<String, Severity>>(r#"sr = "CRITICAL""#).unwrap().get("sr").unwrap().to_owned(), Severity::Critical);
+    }
+
+    #[test]
+    /// Tests implementation of `Ord` trait.
+    fn test_ordering() {
+        use Severity::*;
+        // Check that equal values remain equal.
+        assert!(!(Debug < Debug));
+        assert!(!(Debug > Debug));
+        assert!(!(Information < Information));
+        assert!(!(Information > Information));
+        assert!(!(Warning < Warning));
+        assert!(!(Warning > Warning));
+        assert!(!(Error < Error));
+        assert!(!(Error > Error));
+        assert!(!(Critical < Critical));
+        assert!(!(Critical > Critical));
+
+        // Check all other comparisons.
+        assert!(Debug <= Debug);
+        assert!(Debug >= Debug);
+        assert!(Debug < Information);
+        assert!(Debug < Warning);
+        assert!(Debug < Error);
+        assert!(Debug < Critical);
+        assert!(Information <= Information);
+        assert!(Information >= Information);
+        assert!(Information < Warning);
+        assert!(Information < Error);
+        assert!(Information < Critical);
+        assert!(Warning <= Warning);
+        assert!(Warning >= Warning);
+        assert!(Warning < Error);
+        assert!(Warning < Critical);
+        assert!(Error <= Error);
+        assert!(Error >= Error);
+        assert!(Error < Critical);
+        assert!(Critical <= Critical);
+        assert!(Critical >= Critical);
     }
 
     #[test]

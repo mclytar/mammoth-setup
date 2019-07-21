@@ -96,7 +96,7 @@ pub struct Event {
 }
 
 impl Event {
-    pub fn new(description: &str, severity: Severity) -> Event {
+    pub fn new(severity: Severity, description: &str) -> Event {
         Event {
             timestamp: Local::now(),
             description: description.to_owned(),
@@ -104,7 +104,7 @@ impl Event {
             severity
         }
     }
-    pub fn with_error(description: &str, severity: Severity, error: Error) -> Event {
+    pub fn with_error(severity: Severity, description: &str, error: Error) -> Event {
         Event {
             timestamp: Local::now(),
             description: description.to_owned(),

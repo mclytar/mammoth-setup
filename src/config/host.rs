@@ -12,15 +12,15 @@ use regex::Regex;
 
 use crate::config::port::Binding;
 use crate::config::module::Module;
-use crate::error::{event, Error};
-use crate::error::event::Event;
-use crate::error::validate::{Validate, PathErrorKind, PathValidator};
+use crate::error::Error;
 use crate::error::severity::Severity;
+use crate::log::{Logger, NO_AUX, PathErrorKind, PathValidator, Validate};
 
 const REGEX_NAME_ADDRESS_STRING: &str = r#"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"#;
 const REGEX_IP_ADDRESS_STRING: &str = r#"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"#;
 
-// FOR_LATER: implement the `Log` trait.
+// WARNING: The `validate` function clones several time a variable of type `PathBuf`.
+// FOR_LATER: Find a better implementation for the `validate` function (in particular).
 
 /// Structure that uniquely identifies an `Host` structure within a vector of hosts.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
@@ -175,47 +175,41 @@ impl Host {
     }
 }
 
-impl<V> Validate<V> for Host
-    where
-        V: AsRef<Path>
-{
-    fn validate(&self, _mod_path: V) -> Vec<Event> {
+impl Validate for Host {
+    type Aux = PathBuf;
+
+    fn validate(&self, logger: &mut Logger, aux: Self::Aux) -> Result<(), Error> {
         lazy_static! {
             static ref RE_IP: Regex = Regex::new(REGEX_IP_ADDRESS_STRING).unwrap();
             static ref RE_ADDR: Regex = Regex::new(REGEX_NAME_ADDRESS_STRING).unwrap();
         }
 
-        let mut events = Vec::new();
-
-        events.append(&mut self.listen.validate(()));
+        self.listen.validate(logger, NO_AUX)?;
 
         if let Some(ref name) = self.hostname {
             if !RE_IP.is_match(name) && !RE_ADDR.is_match(name) {
-                events.push(event::critical_error(
-                    "invalid hostname",
-                    Error::InvalidHostname(name.to_owned())
-                ));
+                let desc = format!("Invalid hostname: '{}'.", name);
+                logger.log(Severity::Critical, &desc);
+                Err(Error::InvalidHostname(name.to_owned()))?;
             }
         }
 
-        events.append(&mut self.static_dir.validate(PathValidator(PathErrorKind::Directory, Severity::Error)));
+        self.static_dir.validate(logger, PathValidator(PathErrorKind::Directory, Severity::Error))?;
 
         let mut uniques = Vec::new();
         for m in self.mods.iter() {
             if uniques.contains(&m.name()) {
-                events.push(event::critical_error(
-                    "module declared twice",
-                    Error::DuplicateModule(m.name().to_owned())
-                ));
+                let desc = format!("Module declared twice: '{}'", m.name());
+                logger.log(Severity::Critical, &desc);
+                Err(Error::DuplicateModule(m.name().to_owned()))?;
             } else {
-                // FOR_LATER: Implementation in `Log`.
-                //events.append(&mut m.validate(mod_path.as_ref()));
+                m.validate(logger, aux.clone())?;
 
                 uniques.push(m.name());
             }
         }
 
-        events
+        Ok(())
     }
 }
 
@@ -224,7 +218,8 @@ mod test {
     use crate::config::host::Host;
     use crate::config::port::Binding;
     use crate::config::module::Module;
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
+    use crate::error::event::Event;
 
     #[test]
     /// Tests binding.
@@ -296,6 +291,7 @@ mod test {
     /// Tests the `validate` function.
     fn test_validate() {
         use super::Validate;
+        use std::str::FromStr;
         let host = Host::new(80);
         let host_ssl = Host::with_security(443, "./test_cert.pem", "./test_key.pem");
         let host_err = Host::with_security(443, "./err_cert.pem", "./err_key.pem");
@@ -304,10 +300,13 @@ mod test {
         host_named.set_name("localhost");
         host_named_err.set_name("invalid@name");
 
-        assert_eq!(host.validate("./mods/").len(), 0);
-        assert_eq!(host_ssl.validate("./mods/").len(), 0);
-        assert_eq!(host_err.validate("./mods/").len(), 3);
-        assert_eq!(host_named.validate("./mods/").len(), 0);
-        assert_eq!(host_named_err.validate("./mods/").len(), 1);
+        let mut events: Vec<Event> = Vec::new();
+        let path_buf = PathBuf::from_str("./mods/").unwrap();
+
+        assert!(host.validate(&mut events, path_buf.clone()).is_ok());
+        assert!(host_ssl.validate(&mut events, path_buf.clone()).is_ok());
+        assert!(host_err.validate(&mut events, path_buf.clone()).is_err());
+        assert!(host_named.validate(&mut events, path_buf.clone()).is_ok());
+        assert!(host_named_err.validate(&mut events, path_buf.clone()).is_err());
     }
 }

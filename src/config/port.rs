@@ -7,12 +7,10 @@ use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use serde::{Deserialize, Deserializer};
 use serde::de::{MapAccess, Visitor};
 
-use crate::error::{event, Error};
-use crate::error::event::Event;
-use crate::error::validate::{Validate, PathValidator, PathErrorKind};
+use crate::error::Error;
+use crate::log::{Logger, NoAux, PathErrorKind, PathValidator, Validate};
+// use crate::error::validate::{Validate, PathValidator, PathErrorKind};
 use crate::error::severity::Severity;
-
-// FOR_LATER: implement the `Log` trait.
 
 /// Structure that defines configuration for a binding port.
 #[derive(Clone, Debug, PartialEq)]
@@ -115,20 +113,23 @@ impl Binding {
     }
 }
 
-impl Validate<()> for Binding {
-    fn validate(&self, _: ()) -> Vec<Event> {
-        let mut events = Vec::new();
+impl Validate for Binding {
+    type Aux = NoAux;
 
+    fn validate(&self, logger: &mut Logger, _: Self::Aux) -> Result<(), Error> {
         if self.secure {
-            events.append(&mut self.cert.validate(PathValidator(PathErrorKind::FileExists, Severity::Error)));
-            events.append(&mut self.key.validate(PathValidator(PathErrorKind::FileExists, Severity::Error)));
+            let err_type = PathValidator(PathErrorKind::FileExists, Severity::Error);
+
+            self.cert.validate(logger, err_type)?;
+            self.key.validate(logger, err_type)?;
 
             if let Err(err) = self.ssl_acceptor() {
-                events.push(event::critical_error("error while requesting a secure connection", err));
+                logger.log(Severity::Critical, "Could not construct an SSL acceptor.");
+                Err(Error::Generic(Box::new(err)))?;
             }
         }
 
-        events
+        Ok(())
     }
 }
 
@@ -245,7 +246,8 @@ mod test {
     use std::path::Path;
 
     use super::Binding;
-    use crate::error::validate::Validate;
+    use crate::error::event::Event;
+    use crate::log::{Validate, NO_AUX};
 
     #[test]
     /// Tests parameters handling.
@@ -420,9 +422,15 @@ mod test {
     }
 
     #[test]
+    /// Tests the `Validate` trait implementation.
     fn test_validate() {
+        let param = Binding::new(80);
         let param_ssl = Binding::with_security(8443, "./test_cert.pem", "./test_key.pem");
+        let param_err = Binding::with_security(8443, "./err_cert.pem", "./err_key.pem");
+        let mut events: Vec<Event> = Vec::new();
 
-        assert_eq!(param_ssl.validate(()).len(), 0);
+        assert!(param.validate(&mut events, NO_AUX).is_ok());
+        assert!(param_ssl.validate(&mut events, NO_AUX).is_ok());
+        assert!(param_err.validate(&mut events, NO_AUX).is_err());
     }
 }

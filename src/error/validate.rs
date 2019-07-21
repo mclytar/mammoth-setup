@@ -4,28 +4,6 @@ use super::Error;
 use super::event::Event;
 use super::severity::Severity;
 
-// TODO: Revisit better this part
-
-pub trait Logger {
-    fn log(&mut self, _: Severity, _: &str);
-}
-
-impl Logger for Vec<Event> {
-    fn log(&mut self, severity: Severity, description: &str) {
-        self.push(Event::new(description, severity));
-    }
-}
-
-pub trait Log<A>
-{
-    fn validate<L>(&self, _: &mut L, _: A) where L: Logger;
-    fn check(&self, aux: A) -> Vec<Event> {
-        let mut events = Vec::new();
-        self.validate(&mut events, aux);
-        events
-    }
-}
-
 pub trait Id {
     type Index: Eq;
 
@@ -62,13 +40,13 @@ impl Validate<PathValidator> for PathBuf {
 
         match v {
             PathErrorKind::Directory => if !self.is_dir() || !self.exists() {
-                events.push(Event::with_error("not a valid directory", s, Error::InvalidDirectory(self.clone())));
+                events.push(Event::with_error(s, "not a valid directory", Error::InvalidDirectory(self.clone())));
             },
             PathErrorKind::FileExists => if !self.is_file() || !self.exists() {
-                events.push(Event::with_error("file does not exists", s, Error::FileNotFound(self.clone())));
+                events.push(Event::with_error(s, "file does not exists", Error::FileNotFound(self.clone())));
             }
             PathErrorKind::FilePath => if !self.is_file() {
-                events.push(Event::with_error("not a valid file path", s, Error::InvalidFilePath(self.clone())));
+                events.push(Event::with_error(s, "not a valid file path", Error::InvalidFilePath(self.clone())));
             }
         }
 

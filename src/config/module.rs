@@ -6,19 +6,31 @@
 //! The simplest module is as follows.
 //! ```rust
 //! use mammoth_setup::MammothInterface;
-//! use mammoth_setup::error::event::Event;
-//! use mammoth_setup::error::validate::Validate;
+//! use mammoth_setup::error::Error;
+//! use mammoth_setup::log::{Log, Logger, Validate};
 //! use toml::Value;
 //!
 //! struct LibraryModule {
 //!     /* fields omitted */
 //! }
 //!
-//! impl Validate<Option<Value>> for LibraryModule {
-//!     fn validate(&self, _: Option<Value>) -> Vec<Event> {
-//!         // Validate here the configuration.
-//!         unimplemented!()
+//! impl Validate for LibraryModule {
+//!     type Aux = Option<Value>;
+//!
+//!     fn validate(&self,_: &mut Logger,_: Self::Aux) -> Result<(), Error> {
+//!         // This function checks that the given configuration is correct.
+//!         Ok(())
 //!     }
+//! }
+//!
+//! impl Log for LibraryModule {
+//!     /* Logger registration omitted */
+//! #    fn register_logger(&mut self,logger: std::sync::Arc<std::sync::RwLock<Logger>>) {
+//! #        unimplemented!()
+//! #    }
+//! #    fn retrieve_logger(&self) -> Option<std::sync::Arc<std::sync::RwLock<Logger>>> {
+//! #        unimplemented!()
+//! #    }
 //! }
 //!
 //! impl MammothInterface for LibraryModule {
@@ -45,13 +57,15 @@ use semver::Version;
 use toml::Value;
 
 use crate::MammothInterface;
+use crate::error::Error;
 use crate::loaded::library::LoadedModuleSet;
+use crate::log::{Logger, Validate};
 use crate::version;
 
 // WARNING: untested functions.
 // WARNING: `load_into` function is not tested for now (needs a library).
 // FOR_LATER: Remove `failure` crate dependency.
-// FOR_LATER: implement the `Log` trait.
+// FOR_LATER: implement the `Validate` trait.
 
 /// Structure that defines configuration for a module library.
 #[derive(Clone, Debug, Deserialize)]
@@ -175,5 +189,13 @@ impl Module {
         mod_set.insert(self.name(), interface);
 
         Ok(())
+    }
+}
+
+impl Validate for Module {
+    type Aux = PathBuf;
+
+    fn validate(&self, _logger: &mut Logger, _aux: Self::Aux) -> Result<(), Error> {
+        unimplemented!()
     }
 }

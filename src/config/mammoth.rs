@@ -2,9 +2,9 @@
 //! the modules and the log settings.
 use std::path::{Path, PathBuf};
 
-use crate::error::event::Event;
+use crate::error::Error;
 use crate::error::severity::Severity;
-use crate::error::validate::{Validate, PathErrorKind, PathValidator};
+use crate::log::{Logger, NoAux, PathErrorKind, PathValidator, Validate};
 
 // FOR_LATER: implement the `Log` trait.
 
@@ -60,14 +60,14 @@ impl Mammoth {
     }
 }
 
-impl Validate<()> for Mammoth {
-    fn validate(&self, _: ()) -> Vec<Event> {
-        let mut events = Vec::new();
+impl Validate for Mammoth {
+    type Aux = NoAux;
 
-        events.append(&mut self.mods_dir.validate(PathValidator(PathErrorKind::Directory, Severity::Critical)));
-        events.append(&mut self.log_file.validate(PathValidator(PathErrorKind::FilePath, Severity::Critical)));
+    fn validate(&self, logger: &mut Logger, _: Self::Aux) -> Result<(), Error> {
+        self.mods_dir.validate(logger, PathValidator(PathErrorKind::Directory, Severity::Critical))?;
+        self.log_file.validate(logger, PathValidator(PathErrorKind::FilePath, Severity::Critical))?;
 
-        events
+        Ok(())
     }
 }
 
