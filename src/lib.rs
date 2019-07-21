@@ -6,13 +6,13 @@ extern crate serde_derive;
 pub mod config;
 pub mod error;
 pub mod loaded;
+pub mod version;
 
 use std::any::Any;
 
 use toml::Value;
 
 // TODO: complete and apply the `Log` trait to the `MammothInterface` trait.
-// TODO: complete a library version control system.
 
 /// Trait that contains the functions that should be implemented by a module or a handler.
 pub trait MammothInterface: Any + Send + Sync {

@@ -41,10 +41,12 @@ use std::path::{PathBuf, Path};
 use std::sync::Arc;
 
 use libloading::Symbol;
+use semver::Version;
 use toml::Value;
 
 use crate::MammothInterface;
 use crate::loaded::library::LoadedModuleSet;
+use crate::version;
 
 // WARNING: untested functions.
 // WARNING: `load_into` function is not tested for now (needs a library).
@@ -152,10 +154,21 @@ impl Module {
 
         let library = &mod_set.load(lib_path)?.library;
 
+        let configuration = self.config.as_ref();
+
         let interface = unsafe {
-            let constructor: Symbol<fn() -> *mut MammothInterface> = library.get(b"__construct")?;
-            Arc::new(Box::from_raw(constructor()))
+            let constructor: Symbol<fn(Option<&Value>) -> *mut MammothInterface> = library.get(b"__construct")?;
+            Arc::new(Box::from_raw(constructor(configuration)))
         };
+
+        let version = unsafe {
+            let controller: Symbol<fn() -> Version> = library.get(b"__version")?;
+            controller()
+        };
+
+        if !version::compatible(&version) {
+            Err(failure::err_msg("Incompatible module version."))?;
+        }
 
         interface.on_load(self.config());
 
