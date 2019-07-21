@@ -14,19 +14,27 @@ Items beginning with [...] have more hidden/non-definitive sub-tasks, possibly d
 
 - [x] Add a `TOML` prototype of the possible configuration file.
 - [ ] Add the basic definitions for the configuration file.
-    - [x] Complete `error/severity`
-    - [x] Complete `config`
-    - [x] Complete `config/host`
-    - [x] Complete `config/mammoth`
-    - [x] Complete `config/module`
-    - [x] Complete `config/port`
-    - [ ] Finalize
+    - [x] Complete `error/severity`.
+    - [x] Complete `config`.
+    - [x] Complete `config/host`.
+    - [x] Complete `config/mammoth`.
+    - [x] Complete `config/module`.
+    - [x] Complete `config/port`.
+    - [ ] Finalize.
         - [ ] Complete and finalize the (first version of the) `MammothInterface` trait definition (needed in order to construct libraries to perform tests).
-    - [ ] Version 0.0.1
-- [ ] [...] Add error management.
-    - [ ] [...] Add logging system.
+    - [ ] Version 0.0.1.
+- [ ] Add error management.
+    - [x] Add `Log` and `Logger` traits.
+    - [x] Add `Validate` trait.
+    - [ ] Add `Id` trait and Id uniqueness validation.
+    - [ ] Complete the `Error` enum definition.
+    - [ ] Finalize.
+    - [ ] Version 0.0.2.
+        - [ ] (Complete _Module handling logic_).
 - [ ] [...] Add the module handling logic.
     - [ ] [...] Add version control system for dynamic libraries.
+    - [ ] Version 0.0.2.
+        - [ ] (Complete _Error management_).
 - [ ] [...] Add the server construction logic.
 - [ ] [...] Finalize the project for version 0.1.0.
 
