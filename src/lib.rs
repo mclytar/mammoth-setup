@@ -12,6 +12,9 @@ use std::any::Any;
 
 use toml::Value;
 
+#[cfg(feature = "mammoth_module")]
+pub use mammoth_macro::mammoth_module;
+
 // TODO: complete and apply the `Log` trait to the `MammothInterface` trait.
 
 /// Trait that contains the functions that should be implemented by a module or a handler.
