@@ -9,7 +9,6 @@ use serde::de::{MapAccess, Visitor};
 
 use crate::error::Error;
 use crate::log::{Logger, NoAux, PathErrorKind, PathValidator, Validate};
-// use crate::error::validate::{Validate, PathValidator, PathErrorKind};
 use crate::error::severity::Severity;
 
 /// Structure that defines configuration for a binding port.
@@ -116,12 +115,12 @@ impl Binding {
 impl Validate for Binding {
     type Aux = NoAux;
 
-    fn validate(&self, logger: &mut Logger, _: Self::Aux) -> Result<(), Error> {
+    fn validate(&self, logger: &mut Logger, _: &Self::Aux) -> Result<(), Error> {
         if self.secure {
             let err_type = PathValidator(PathErrorKind::FileExists, Severity::Error);
 
-            self.cert.validate(logger, err_type)?;
-            self.key.validate(logger, err_type)?;
+            self.cert.validate(logger, &err_type)?;
+            self.key.validate(logger, &err_type)?;
 
             if let Err(err) = self.ssl_acceptor() {
                 logger.log(Severity::Critical, "Could not construct an SSL acceptor.");

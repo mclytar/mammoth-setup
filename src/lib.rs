@@ -5,6 +5,7 @@ extern crate serde_derive;
 
 pub mod config;
 pub mod error;
+pub mod id;
 pub mod loaded;
 pub mod log;
 pub mod version;

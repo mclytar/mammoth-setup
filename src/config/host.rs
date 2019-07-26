@@ -15,6 +15,7 @@ use crate::config::module::Module;
 use crate::error::Error;
 use crate::error::severity::Severity;
 use crate::log::{Logger, NO_AUX, PathErrorKind, PathValidator, Validate};
+use crate::id::{Id, ValidateUnique};
 
 const REGEX_NAME_ADDRESS_STRING: &str = r#"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"#;
 const REGEX_IP_ADDRESS_STRING: &str = r#"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"#;
@@ -23,7 +24,7 @@ const REGEX_IP_ADDRESS_STRING: &str = r#"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-
 // FOR_LATER: Find a better implementation for the `validate` function (in particular).
 
 /// Structure that uniquely identifies an `Host` structure within a vector of hosts.
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 pub struct HostIdentifier {
     hostname: Option<String>,
     port: u16
@@ -175,10 +176,18 @@ impl Host {
     }
 }
 
-impl Validate for Host {
-    type Aux = PathBuf;
+impl Id for Host {
+    type Identifier = HostIdentifier;
 
-    fn validate(&self, logger: &mut Logger, aux: Self::Aux) -> Result<(), Error> {
+    fn id(&self) -> Self::Identifier {
+        HostIdentifier::new(self.listen.port(), self.name())
+    }
+}
+
+impl Validate for Host {
+    type Aux = Option<PathBuf>;
+
+    fn validate(&self, logger: &mut Logger, aux: &Self::Aux) -> Result<(), Error> {
         lazy_static! {
             static ref RE_IP: Regex = Regex::new(REGEX_IP_ADDRESS_STRING).unwrap();
             static ref RE_ADDR: Regex = Regex::new(REGEX_NAME_ADDRESS_STRING).unwrap();
@@ -194,19 +203,13 @@ impl Validate for Host {
             }
         }
 
-        self.static_dir.validate(logger, PathValidator(PathErrorKind::Directory, Severity::Error))?;
+        self.static_dir.validate(logger, &PathValidator(PathErrorKind::Directory, Severity::Error))?;
 
-        let mut uniques = Vec::new();
-        for m in self.mods.iter() {
-            if uniques.contains(&m.name()) {
-                let desc = format!("Module declared twice: '{}'", m.name());
-                logger.log(Severity::Critical, &desc);
-                Err(Error::DuplicateModule(m.name().to_owned()))?;
-            } else {
-                m.validate(logger, aux.clone())?;
-
-                uniques.push(m.name());
-            }
+        if let Some(mods_dir) = aux {
+            self.mods.validate_unique(logger, mods_dir)?;
+        } else {
+            // TODO:
+            unimplemented!()
         }
 
         Ok(())
@@ -303,10 +306,10 @@ mod test {
         let mut events: Vec<Event> = Vec::new();
         let path_buf = PathBuf::from_str("./mods/").unwrap();
 
-        assert!(host.validate(&mut events, path_buf.clone()).is_ok());
-        assert!(host_ssl.validate(&mut events, path_buf.clone()).is_ok());
-        assert!(host_err.validate(&mut events, path_buf.clone()).is_err());
-        assert!(host_named.validate(&mut events, path_buf.clone()).is_ok());
-        assert!(host_named_err.validate(&mut events, path_buf.clone()).is_err());
+        assert!(host.validate(&mut events, &Some(path_buf.clone())).is_ok());
+        assert!(host_ssl.validate(&mut events, &Some(path_buf.clone())).is_ok());
+        assert!(host_err.validate(&mut events, &Some(path_buf.clone())).is_err());
+        assert!(host_named.validate(&mut events, &Some(path_buf.clone())).is_ok());
+        assert!(host_named_err.validate(&mut events, &Some(path_buf.clone())).is_err());
     }
 }

@@ -1,13 +1,13 @@
+use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
 use crate::error::Error;
 use crate::error::event::Event;
 use crate::error::severity::Severity;
-use std::path::PathBuf;
 
 pub type AsyncLoggerReference = Arc<RwLock<Logger>>;
 pub type NoAux = ();
-pub const NO_AUX: NoAux = ();
+pub const NO_AUX: &NoAux = &();
 
 pub trait Logger {
     fn log(&mut self, _: Severity, _: &str);
@@ -16,7 +16,7 @@ pub trait Logger {
 pub trait Validate {
     type Aux;
 
-    fn validate(&self, _: &mut Logger, _: Self::Aux) -> Result<(), Error>;
+    fn validate(&self, _: &mut Logger, _: &Self::Aux) -> Result<(), Error>;
 }
 
 pub trait Log: Validate
@@ -51,8 +51,8 @@ pub struct PathValidator(pub PathErrorKind, pub Severity);
 impl Validate for PathBuf {
     type Aux = PathValidator;
 
-    fn validate(&self, logger: &mut Logger, aux: Self::Aux) -> Result<(), Error> {
-        let PathValidator(v, s) = aux;
+    fn validate(&self, logger: &mut Logger, aux: &Self::Aux) -> Result<(), Error> {
+        let &PathValidator(ref v, s) = aux;
 
         match v {
             PathErrorKind::Directory => if !self.is_dir() || !self.exists() {
@@ -82,12 +82,23 @@ impl<T, A> Validate for Option<T>
 {
     type Aux = A;
 
-    fn validate(&self, logger: &mut Logger, aux: Self::Aux) -> Result<(), Error> {
+    fn validate(&self, logger: &mut Logger, aux: &Self::Aux) -> Result<(), Error> {
         if let Some(ref some) = self {
             some.validate(logger, aux)
         } else {
             logger.log(Severity::Information, "Nothing to validate.");
             Ok(())
         }
+    }
+}
+
+impl<T> Validate for Vec<T>
+    where
+        T: Validate
+{
+    type Aux = T::Aux;
+
+    fn validate(&self, logger: &mut Logger, aux: &Self::Aux) -> Result<(), Error> {
+        self.iter().map(|e| e.validate(logger, aux)).collect()
     }
 }

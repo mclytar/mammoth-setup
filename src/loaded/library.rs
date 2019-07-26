@@ -4,7 +4,8 @@ use std::sync::Arc;
 use libloading::Library;
 
 use crate::MammothInterface;
-use crate::error::validate::Id;
+use crate::error::Error;
+use crate::id::Id;
 
 pub struct LoadedLibrary {
     pub path: PathBuf,
@@ -12,9 +13,9 @@ pub struct LoadedLibrary {
 }
 
 impl Id for LoadedLibrary {
-    type Index = PathBuf;
+    type Identifier = PathBuf;
 
-    fn id(&self) -> Self::Index {
+    fn id(&self) -> Self::Identifier {
         self.path.clone()
     }
 }
@@ -43,7 +44,7 @@ impl LoadedModuleSet {
         }
     }
 
-    pub fn load<P>(&mut self, path: P) -> Result<Arc<LoadedLibrary>, failure::Error>
+    pub fn load<P>(&mut self, path: P) -> Result<Arc<LoadedLibrary>, Error>
         where
             P: AsRef<Path>
     {

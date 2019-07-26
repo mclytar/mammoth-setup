@@ -17,7 +17,7 @@
 //! impl Validate for LibraryModule {
 //!     type Aux = Option<Value>;
 //!
-//!     fn validate(&self,_: &mut Logger,_: Self::Aux) -> Result<(), Error> {
+//!     fn validate(&self,_: &mut Logger,_: &Self::Aux) -> Result<(), Error> {
 //!         // This function checks that the given configuration is correct.
 //!         Ok(())
 //!     }
@@ -50,10 +50,11 @@
 //! function and a `__validate` function).
 
 use std::path::{PathBuf, Path};
+use std::str::FromStr;
 use std::sync::Arc;
 
-use libloading::Symbol;
-use semver::Version;
+use libloading::{Library, Symbol};
+use semver::{Version, VersionReq};
 use toml::Value;
 
 use crate::MammothInterface;
@@ -61,11 +62,11 @@ use crate::error::Error;
 use crate::loaded::library::LoadedModuleSet;
 use crate::log::{Logger, Validate};
 use crate::version;
+use crate::error::severity::Severity;
+use crate::id::Id;
 
 // WARNING: untested functions.
 // WARNING: `load_into` function is not tested for now (needs a library).
-// FOR_LATER: Remove `failure` crate dependency.
-// FOR_LATER: implement the `Validate` trait.
 
 /// Structure that defines configuration for a module library.
 #[derive(Clone, Debug, Deserialize)]
@@ -158,7 +159,7 @@ impl Module {
         self.location = None;
     }
     /// Tries to load the library.
-    pub fn load_into(&self, mod_set: &mut LoadedModuleSet) -> Result<(), failure::Error>
+    pub fn load_into(&self, mod_set: &mut LoadedModuleSet) -> Result<(), Error>
     {
         let lib_path = if let Some(ref path) = self.location {
             path.clone()
@@ -168,21 +169,21 @@ impl Module {
 
         let library = &mod_set.load(lib_path)?.library;
 
-        let configuration = self.config.as_ref();
-
-        let interface = unsafe {
-            let constructor: Symbol<fn(Option<&Value>) -> *mut MammothInterface> = library.get(b"__construct")?;
-            Arc::new(Box::from_raw(constructor(configuration)))
-        };
-
         let version = unsafe {
             let controller: Symbol<fn() -> Version> = library.get(b"__version")?;
             controller()
         };
 
         if !version::compatible(&version) {
-            Err(failure::err_msg("Incompatible module version."))?;
+            Err(Error::InvalidModuleVersion(version.clone(), VersionReq::from_str(version::COMPATIBILITY_STRING).unwrap()))?;
         }
+
+        let configuration = self.config.as_ref();
+
+        let interface = unsafe {
+            let constructor: Symbol<fn(Option<&Value>) -> *mut MammothInterface> = library.get(b"__construct")?;
+            Arc::new(Box::from_raw(constructor(configuration)))
+        };
 
         interface.on_load(self.config());
 
@@ -192,10 +193,35 @@ impl Module {
     }
 }
 
+impl Id for Module {
+    type Identifier = String;
+
+    fn id(&self) -> Self::Identifier {
+        self.name.to_owned()
+    }
+}
+
 impl Validate for Module {
     type Aux = PathBuf;
 
-    fn validate(&self, _logger: &mut Logger, _aux: Self::Aux) -> Result<(), Error> {
-        unimplemented!()
+    fn validate(&self, logger: &mut Logger, aux: &Self::Aux) -> Result<(), Error> {
+        let lib = Library::new(aux)?;
+        let ver = unsafe {
+            let ver_fn: Symbol<fn() -> Version> = lib.get(b"__version")?;
+            ver_fn()
+        };
+
+        if !version::compatible(&ver) {
+            let desc = format!("Incompatible module version for '{}': {}. Must respect requisite {}.", &self.name, &ver, version::COMPATIBILITY_STRING);
+            logger.log(Severity::Critical, &desc);
+            Err(Error::InvalidModuleVersion(ver.clone(), VersionReq::from_str(version::COMPATIBILITY_STRING).unwrap()))?;
+        }
+
+        let interface = unsafe {
+            let constructor: Symbol<fn() -> *mut MammothInterface> = lib.get(b"__construct")?;
+            Box::from_raw(constructor())
+        };
+
+        interface.validate(logger, &self.config)
     }
 }

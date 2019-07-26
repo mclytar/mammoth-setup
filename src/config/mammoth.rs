@@ -6,8 +6,6 @@ use crate::error::Error;
 use crate::error::severity::Severity;
 use crate::log::{Logger, NoAux, PathErrorKind, PathValidator, Validate};
 
-// FOR_LATER: implement the `Log` trait.
-
 /// Structure that defines the general configuration for the Mammoth application.
 #[derive(Clone, Debug, Deserialize)]
 pub struct Mammoth {
@@ -63,9 +61,9 @@ impl Mammoth {
 impl Validate for Mammoth {
     type Aux = NoAux;
 
-    fn validate(&self, logger: &mut Logger, _: Self::Aux) -> Result<(), Error> {
-        self.mods_dir.validate(logger, PathValidator(PathErrorKind::Directory, Severity::Critical))?;
-        self.log_file.validate(logger, PathValidator(PathErrorKind::FilePath, Severity::Critical))?;
+    fn validate(&self, logger: &mut Logger, _: &Self::Aux) -> Result<(), Error> {
+        self.mods_dir.validate(logger, &PathValidator(PathErrorKind::Directory, Severity::Critical))?;
+        self.log_file.validate(logger, &PathValidator(PathErrorKind::FilePath, Severity::Critical))?;
 
         Ok(())
     }
