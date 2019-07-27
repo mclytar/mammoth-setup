@@ -11,18 +11,18 @@ use std::path::Path;
 
 use toml::Value;
 
-use crate::error::Error;
-use crate::log::{Validate, Logger, NO_AUX, NoAux};
-
 pub use self::host::Host;
 pub use self::host::HostIdentifier;
 pub use self::mammoth::Mammoth;
 pub use self::module::Module;
-use crate::id::ValidateUnique;
+use crate::validation::{Validator, IdValidator};
+use crate::log::Logger;
+use crate::error::Error;
+use crate::error::severity::Severity;
+use serde::export::PhantomData;
 
 // FOR_LATER: Add tests.
 // FOR_LATER: Remove `failure` crate dependency.
-// FOR_LATER: implement the `Log` trait.
 
 /// Structure that contains all the configuration for the Mammoth application.
 #[derive(Clone, Debug, Deserialize)]
@@ -107,21 +107,28 @@ impl ConfigurationFile {
     }
 }
 
-impl Validate for ConfigurationFile {
-    type Aux = NoAux;
+impl Validator<ConfigurationFile> for () {
+    fn validate(&self, logger: &mut Logger, item: &ConfigurationFile) -> Result<(), Error> {
+        ().validate(logger, item.mammoth())?;
 
-    fn validate(&self, logger: &mut Logger, _: &Self::Aux) -> Result<(), Error> {
-        self.mammoth.validate(logger, NO_AUX)?;
-        let mods_dir = self.mammoth.mods_dir();
-        if let Some(mods_dir) = mods_dir {
-            let mods_dir = mods_dir.to_path_buf();
-            self.mods.validate_unique(logger, &mods_dir)?;
-            self.hosts.validate_unique(logger, &Some(mods_dir))?;
-        } else {
-            // TODO: handle error in case no mods directory has been specified.
-            unimplemented!()
+        if item.hosts().is_empty() {
+            logger.log(Severity::Critical, "No host specified.");
+            Err(Error::NoHost)?;
         }
-        // TODO: handle error in case no host has been specified.
+
+        let mods_dir = item.mammoth().mods_dir();
+        if let Some(mods_dir) = mods_dir {
+            IdValidator(Severity::Critical, mods_dir.to_path_buf(), PhantomData)
+                .validate(logger, &item.mods())?;
+            IdValidator(Severity::Critical, mods_dir.to_path_buf(), PhantomData)
+                .validate(logger, &item.hosts())?;
+        } else {
+            if !item.mods().is_empty() {
+                logger.log(Severity::Critical, "Enabled modules without specifying modules directory.");
+                Err(Error::NoModsDir)?;
+            }
+        }
+
         Ok(())
     }
 }

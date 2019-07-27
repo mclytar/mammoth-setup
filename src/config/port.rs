@@ -8,8 +8,9 @@ use serde::{Deserialize, Deserializer};
 use serde::de::{MapAccess, Visitor};
 
 use crate::error::Error;
-use crate::log::{Logger, NoAux, PathErrorKind, PathValidator, Validate};
 use crate::error::severity::Severity;
+use crate::log::Logger;
+use crate::validation::{Validator, PathValidator, PathValidatorKind};
 
 /// Structure that defines configuration for a binding port.
 #[derive(Clone, Debug, PartialEq)]
@@ -112,17 +113,15 @@ impl Binding {
     }
 }
 
-impl Validate for Binding {
-    type Aux = NoAux;
+impl Validator<Binding> for () {
+    fn validate(&self, logger: &mut Logger, item: &Binding) -> Result<(), Error> {
+        if item.secure() {
+            let validator = PathValidator(Severity::Critical, PathValidatorKind::ExistingFile);
 
-    fn validate(&self, logger: &mut Logger, _: &Self::Aux) -> Result<(), Error> {
-        if self.secure {
-            let err_type = PathValidator(PathErrorKind::FileExists, Severity::Error);
+            validator.validate(logger, &item.cert().unwrap())?;
+            validator.validate(logger, &item.key().unwrap())?;
 
-            self.cert.validate(logger, &err_type)?;
-            self.key.validate(logger, &err_type)?;
-
-            if let Err(err) = self.ssl_acceptor() {
+            if let Err(err) = item.ssl_acceptor() {
                 logger.log(Severity::Critical, "Could not construct an SSL acceptor.");
                 Err(Error::Generic(Box::new(err)))?;
             }
@@ -246,7 +245,6 @@ mod test {
 
     use super::Binding;
     use crate::error::event::Event;
-    use crate::log::{Validate, NO_AUX};
 
     #[test]
     /// Tests parameters handling.
@@ -423,13 +421,15 @@ mod test {
     #[test]
     /// Tests the `Validate` trait implementation.
     fn test_validate() {
+        use crate::validation::Validator;
+
         let param = Binding::new(80);
         let param_ssl = Binding::with_security(8443, "./test_cert.pem", "./test_key.pem");
         let param_err = Binding::with_security(8443, "./err_cert.pem", "./err_key.pem");
         let mut events: Vec<Event> = Vec::new();
 
-        assert!(param.validate(&mut events, NO_AUX).is_ok());
-        assert!(param_ssl.validate(&mut events, NO_AUX).is_ok());
-        assert!(param_err.validate(&mut events, NO_AUX).is_err());
+        assert!(().validate(&mut events, &param).is_ok());
+        assert!(().validate(&mut events, &param_ssl).is_ok());
+        assert!(().validate(&mut events, &param_err).is_err());
     }
 }

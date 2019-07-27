@@ -7,24 +7,15 @@
 //! ```rust
 //! use mammoth_setup::MammothInterface;
 //! use mammoth_setup::error::Error;
-//! use mammoth_setup::log::{Log, Logger, Validate};
+//! use mammoth_setup::log::{Log, Logger};
 //! use toml::Value;
 //!
 //! struct LibraryModule {
 //!     /* fields omitted */
 //! }
 //!
-//! impl Validate for LibraryModule {
-//!     type Aux = Option<Value>;
-//!
-//!     fn validate(&self,_: &mut Logger,_: &Self::Aux) -> Result<(), Error> {
-//!         // This function checks that the given configuration is correct.
-//!         Ok(())
-//!     }
-//! }
-//!
 //! impl Log for LibraryModule {
-//!     /* Logger registration omitted */
+//!     /* implementation omitted */
 //! #    fn register_logger(&mut self,logger: std::sync::Arc<std::sync::RwLock<Logger>>) {
 //! #        unimplemented!()
 //! #    }
@@ -34,9 +25,13 @@
 //! }
 //!
 //! impl MammothInterface for LibraryModule {
+//! #    fn on_validation(&self,_: &mut Logger,_: Option<&Value>) -> Result<(), Error> {
+//! #        unimplemented!()
+//! #    }
 //!     /* implementation omitted */
 //! }
 //!
+//! #[no_mangle]
 //! fn __construct() -> *mut MammothInterface {
 //!     let interface = LibraryModule { /* ... */ };
 //!     /* initialization omitted */
@@ -59,11 +54,12 @@ use toml::Value;
 
 use crate::MammothInterface;
 use crate::error::Error;
-use crate::loaded::library::LoadedModuleSet;
-use crate::log::{Logger, Validate};
-use crate::version;
 use crate::error::severity::Severity;
 use crate::id::Id;
+use crate::loaded::library::LoadedModuleSet;
+use crate::log::Logger;
+use crate::validation::Validator;
+use crate::version;
 
 // WARNING: untested functions.
 // WARNING: `load_into` function is not tested for now (needs a library).
@@ -201,27 +197,32 @@ impl Id for Module {
     }
 }
 
-impl Validate for Module {
-    type Aux = PathBuf;
-
-    fn validate(&self, logger: &mut Logger, aux: &Self::Aux) -> Result<(), Error> {
-        let lib = Library::new(aux)?;
-        let ver = unsafe {
+impl Validator<Module> for PathBuf {
+    fn validate(&self, logger: &mut Logger, item: &Module) -> Result<(), Error> {
+        let filename = if let Some(filename) = item.location() {
+            filename.to_path_buf()
+        } else {
+            self.join(item.name().to_owned() + ".dll")
+        };
+        let lib = Library::new(&filename)?;
+        let ver: Version = unsafe {
             let ver_fn: Symbol<fn() -> Version> = lib.get(b"__version")?;
             ver_fn()
         };
 
         if !version::compatible(&ver) {
-            let desc = format!("Incompatible module version for '{}': {}. Must respect requisite {}.", &self.name, &ver, version::COMPATIBILITY_STRING);
+            let desc = format!("Incompatible module version for '{}': {}. Must respect requisite {}.", item.name(), &ver, version::COMPATIBILITY_STRING);
             logger.log(Severity::Critical, &desc);
             Err(Error::InvalidModuleVersion(ver.clone(), VersionReq::from_str(version::COMPATIBILITY_STRING).unwrap()))?;
         }
 
-        let interface = unsafe {
+        let interface: Box<MammothInterface> = unsafe {
             let constructor: Symbol<fn() -> *mut MammothInterface> = lib.get(b"__construct")?;
             Box::from_raw(constructor())
         };
 
-        interface.validate(logger, &self.config)
+        interface.on_validation(logger, item.config())?;
+
+        Ok(())
     }
 }

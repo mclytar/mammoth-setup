@@ -14,14 +14,15 @@ use crate::config::port::Binding;
 use crate::config::module::Module;
 use crate::error::Error;
 use crate::error::severity::Severity;
-use crate::log::{Logger, NO_AUX, PathErrorKind, PathValidator, Validate};
-use crate::id::{Id, ValidateUnique};
+use crate::log::Logger;
+use crate::id::Id;
+use crate::validation::{Validator, PathValidatorKind, IdValidator, PathValidator};
+use serde::export::PhantomData;
 
 const REGEX_NAME_ADDRESS_STRING: &str = r#"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"#;
 const REGEX_IP_ADDRESS_STRING: &str = r#"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"#;
 
 // WARNING: The `validate` function clones several time a variable of type `PathBuf`.
-// FOR_LATER: Find a better implementation for the `validate` function (in particular).
 
 /// Structure that uniquely identifies an `Host` structure within a vector of hosts.
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
@@ -184,18 +185,16 @@ impl Id for Host {
     }
 }
 
-impl Validate for Host {
-    type Aux = Option<PathBuf>;
-
-    fn validate(&self, logger: &mut Logger, aux: &Self::Aux) -> Result<(), Error> {
+impl Validator<Host> for PathBuf {
+    fn validate(&self, logger: &mut Logger, item: &Host) -> Result<(), Error> {
         lazy_static! {
             static ref RE_IP: Regex = Regex::new(REGEX_IP_ADDRESS_STRING).unwrap();
             static ref RE_ADDR: Regex = Regex::new(REGEX_NAME_ADDRESS_STRING).unwrap();
         }
 
-        self.listen.validate(logger, NO_AUX)?;
+        ().validate(logger, item.binding())?;
 
-        if let Some(ref name) = self.hostname {
+        if let Some(name) = item.name() {
             if !RE_IP.is_match(name) && !RE_ADDR.is_match(name) {
                 let desc = format!("Invalid hostname: '{}'.", name);
                 logger.log(Severity::Critical, &desc);
@@ -203,14 +202,13 @@ impl Validate for Host {
             }
         }
 
-        self.static_dir.validate(logger, &PathValidator(PathErrorKind::Directory, Severity::Error))?;
-
-        if let Some(mods_dir) = aux {
-            self.mods.validate_unique(logger, mods_dir)?;
-        } else {
-            // TODO:
-            unimplemented!()
+        if let Some(serving_dir) = item.serving_dir() {
+            PathValidator(Severity::Error, PathValidatorKind::DirectoryPath)
+                .validate(logger, &serving_dir)?;
         }
+
+        let validator = IdValidator(Severity::Critical, self.clone(), PhantomData);
+        validator.validate(logger, &item.mods())?;
 
         Ok(())
     }
@@ -293,7 +291,7 @@ mod test {
     #[test]
     /// Tests the `validate` function.
     fn test_validate() {
-        use super::Validate;
+        use crate::validation::Validator;
         use std::str::FromStr;
         let host = Host::new(80);
         let host_ssl = Host::with_security(443, "./test_cert.pem", "./test_key.pem");
@@ -306,10 +304,10 @@ mod test {
         let mut events: Vec<Event> = Vec::new();
         let path_buf = PathBuf::from_str("./mods/").unwrap();
 
-        assert!(host.validate(&mut events, &Some(path_buf.clone())).is_ok());
-        assert!(host_ssl.validate(&mut events, &Some(path_buf.clone())).is_ok());
-        assert!(host_err.validate(&mut events, &Some(path_buf.clone())).is_err());
-        assert!(host_named.validate(&mut events, &Some(path_buf.clone())).is_ok());
-        assert!(host_named_err.validate(&mut events, &Some(path_buf.clone())).is_err());
+        assert!(path_buf.validate(&mut events, &host).is_ok());
+        assert!(path_buf.validate(&mut events, &host_ssl).is_ok());
+        assert!(path_buf.validate(&mut events, &host_err).is_err());
+        assert!(path_buf.validate(&mut events, &host_named).is_ok());
+        assert!(path_buf.validate(&mut events, &host_named_err).is_err());
     }
 }

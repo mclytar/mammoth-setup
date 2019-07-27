@@ -12,7 +12,7 @@ use semver::{Version, VersionReq};
 
 #[derive(Debug)]
 pub enum Error {
-    DuplicateModule(String),
+    DuplicateItem(String),
     FileNotFound(PathBuf),
     Generic(Box<ErrorTrait>),
     InvalidDirectory(PathBuf),
@@ -20,6 +20,8 @@ pub enum Error {
     InvalidHostname(String),
     InvalidModuleVersion(Version, VersionReq),
     Io(IoError),
+    NoHost,
+    NoModsDir,
     SecureBindOnInsecure,
     Ssl(SslError),
     Unknown,
@@ -28,7 +30,7 @@ pub enum Error {
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
         match &self {
-            Error::DuplicateModule(name) => write!(f, "Duplicate module: '{}'", name),
+            Error::DuplicateItem(name) => write!(f, "Duplicate item: '{}'", name),
             Error::FileNotFound(filename) => write!(f, "File not found: '{}'", filename.to_str().unwrap_or("")),
             Error::Generic(err) => write!(f, "Generic error: {}", err.as_ref()),
             Error::Io(err) => write!(f, "I/O error: {}", err),
@@ -36,6 +38,8 @@ impl Display for Error {
             Error::InvalidFilePath(path) => write!(f, "Invalid path: '{}'", path.to_str().unwrap_or("")),
             Error::InvalidHostname(hostname) => write!(f, "Invalid hostname: '{}'", hostname),
             Error::InvalidModuleVersion(ver, ver_req) => write!(f, "Invalid module version: {}; expected: {}.", ver, ver_req),
+            Error::NoHost => write!(f, "No host specified; one required."),
+            Error::NoModsDir => write!(f, "No directory specified for modules; required if modules are enabled."),
             Error::SecureBindOnInsecure => write!(f, "Tried to bind to a secure port without a certificate"),
             Error::Ssl(stack) => write!(f, "SSL error: {}", stack),
             Error::Unknown => write!(f, "Unknown"),
@@ -46,7 +50,7 @@ impl Display for Error {
 impl ErrorTrait for Error {
     fn description(&self) -> &str {
         match &self {
-            Error::DuplicateModule(_) => "duplicate module",
+            Error::DuplicateItem(_) => "duplicate item",
             Error::FileNotFound(_) => "file not found",
             Error::Generic(_) => "generic error",
             Error::Io(_) => "i/o error",
@@ -54,6 +58,8 @@ impl ErrorTrait for Error {
             Error::InvalidFilePath(_) => "invalid file path",
             Error::InvalidHostname(_) => "invalid hostname",
             Error::InvalidModuleVersion(_, _) => "invalid module version",
+            Error::NoHost => "no host",
+            Error::NoModsDir => "no mods_dir",
             Error::SecureBindOnInsecure => "secure binding without certificate",
             Error::Ssl(_) => "ssl error",
             Error::Unknown => "unknown"
