@@ -75,8 +75,9 @@ impl Validator<Mammoth> for () {
 
 #[cfg(test)]
 mod test {
-    use crate::config::Mammoth;
     use std::path::Path;
+
+    use crate::config::Mammoth;
     use crate::error::severity::Severity;
 
     #[test]

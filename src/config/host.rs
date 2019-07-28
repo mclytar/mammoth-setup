@@ -6,23 +6,21 @@
 //! but only the port/hostname pair.
 //!
 //! Only one host is allowed per port/hostname pair.
+use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 
 use regex::Regex;
 
-use crate::config::port::Binding;
 use crate::config::module::Module;
+use crate::config::port::Binding;
 use crate::error::Error;
 use crate::error::severity::Severity;
-use crate::log::Logger;
 use crate::id::Id;
-use crate::validation::{Validator, PathValidatorKind, IdValidator, PathValidator};
-use serde::export::PhantomData;
+use crate::log::Logger;
+use crate::validation::{Validator, IdValidator, PathValidator, PathValidatorKind};
 
 const REGEX_NAME_ADDRESS_STRING: &str = r#"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"#;
 const REGEX_IP_ADDRESS_STRING: &str = r#"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"#;
-
-// WARNING: The `validate` function clones several time a variable of type `PathBuf`.
 
 /// Structure that uniquely identifies an `Host` structure within a vector of hosts.
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
@@ -216,10 +214,11 @@ impl Validator<Host> for PathBuf {
 
 #[cfg(test)]
 mod test {
-    use crate::config::host::Host;
-    use crate::config::port::Binding;
-    use crate::config::module::Module;
     use std::path::{Path, PathBuf};
+
+    use crate::config::host::Host;
+    use crate::config::module::Module;
+    use crate::config::port::Binding;
     use crate::error::event::Event;
 
     #[test]

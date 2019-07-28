@@ -21,13 +21,14 @@ pub fn mammoth_module(attr: TokenStream, item: TokenStream) -> TokenStream {
         trait __mammoth_interface: mammoth_setup::MammothInterface {}
 
         #[no_mangle]
-        pub fn __version() -> semver::Version {
+        pub extern fn __version() -> semver::Version {
             semver::Version::new(0,0,1)
         }
 
         #[no_mangle]
-        pub fn __construct(cfg: Option<toml::Value>) -> #name {
-            #constructor(cfg)
+        pub extern fn __construct(cfg: Option<toml::Value>) -> *mut mammoth_setup::MammothInterface {
+            let interface = Box::new(#constructor(cfg));
+            Box::into_raw(interface)
         }
 
         #ast

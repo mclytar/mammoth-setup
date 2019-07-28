@@ -2,12 +2,11 @@ use std::sync::{Arc, RwLock};
 
 use crate::error::event::Event;
 use crate::error::severity::Severity;
+use std::any::Any;
 
 pub type AsyncLoggerReference = Arc<RwLock<Logger>>;
-pub type NoAux = ();
-pub const NO_AUX: &NoAux = &();
 
-pub trait Logger {
+pub trait Logger: Any + Send + Sync {
     fn log(&mut self, _: Severity, _: &str);
 }
 

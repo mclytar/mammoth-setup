@@ -14,7 +14,7 @@ use semver::{Version, VersionReq};
 pub enum Error {
     DuplicateItem(String),
     FileNotFound(PathBuf),
-    Generic(Box<ErrorTrait>),
+    Generic(Box<ErrorTrait + Send + Sync>),
     InvalidDirectory(PathBuf),
     InvalidFilePath(PathBuf),
     InvalidHostname(String),

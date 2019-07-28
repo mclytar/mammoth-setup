@@ -25,7 +25,7 @@
 //! }
 //!
 //! impl MammothInterface for LibraryModule {
-//! #    fn on_validation(&self,_: &mut Logger,_: Option<&Value>) -> Result<(), Error> {
+//! #    fn on_validation(&self,_: &mut Logger) -> Result<(), Error> {
 //! #        unimplemented!()
 //! #    }
 //!     /* implementation omitted */
@@ -60,9 +60,6 @@ use crate::loaded::library::LoadedModuleSet;
 use crate::log::Logger;
 use crate::validation::Validator;
 use crate::version;
-
-// WARNING: untested functions.
-// WARNING: `load_into` function is not tested for now (needs a library).
 
 /// Structure that defines configuration for a module library.
 #[derive(Clone, Debug, Deserialize)]
@@ -166,7 +163,7 @@ impl Module {
         let library = &mod_set.load(lib_path)?.library;
 
         let version = unsafe {
-            let controller: Symbol<fn() -> Version> = library.get(b"__version")?;
+            let controller: Symbol<extern fn() -> Version> = library.get(b"__version")?;
             controller()
         };
 
@@ -174,14 +171,14 @@ impl Module {
             Err(Error::InvalidModuleVersion(version.clone(), VersionReq::from_str(version::COMPATIBILITY_STRING).unwrap()))?;
         }
 
-        let configuration = self.config.as_ref();
+        let configuration = self.config.clone();
 
         let interface = unsafe {
-            let constructor: Symbol<fn(Option<&Value>) -> *mut MammothInterface> = library.get(b"__construct")?;
+            let constructor: Symbol<extern fn(Option<Value>) -> *mut MammothInterface> = library.get(b"__construct")?;
             Arc::new(Box::from_raw(constructor(configuration)))
         };
 
-        interface.on_load(self.config());
+        interface.on_load();
 
         mod_set.insert(self.name(), interface);
 
@@ -206,7 +203,7 @@ impl Validator<Module> for PathBuf {
         };
         let lib = Library::new(&filename)?;
         let ver: Version = unsafe {
-            let ver_fn: Symbol<fn() -> Version> = lib.get(b"__version")?;
+            let ver_fn: Symbol<extern fn() -> Version> = lib.get(b"__version")?;
             ver_fn()
         };
 
@@ -216,13 +213,106 @@ impl Validator<Module> for PathBuf {
             Err(Error::InvalidModuleVersion(ver.clone(), VersionReq::from_str(version::COMPATIBILITY_STRING).unwrap()))?;
         }
 
-        let interface: Box<MammothInterface> = unsafe {
-            let constructor: Symbol<fn() -> *mut MammothInterface> = lib.get(b"__construct")?;
-            Box::from_raw(constructor())
+        let configuration = if let Some(config) = item.config() {
+            Some(config.to_owned())
+        } else {
+            None
         };
 
-        interface.on_validation(logger, item.config())?;
+        let interface: Box<MammothInterface> = unsafe {
+            let constructor: Symbol<extern fn(Option<Value>) -> *mut MammothInterface> = lib.get(b"__construct")?;
+            Box::from_raw(constructor(configuration))
+        };
+
+        interface.on_validation(logger)?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::path::PathBuf;
+    use std::str::FromStr;
+
+    use toml::Value;
+
+    use crate::config::Module;
+    use crate::error::event::Event;
+    use crate::loaded::library::LoadedModuleSet;
+    use crate::validation::Validator;
+
+    /// Checks if the needed module is available for testing.
+    fn check_test_module_exist() {
+        let path = PathBuf::from_str("./target/debug/mod_test.dll").unwrap();
+        if !path.exists() {
+            unimplemented!("test library 'mod_test' does not exist.");
+        }
+    }
+
+    #[test]
+    /// Tests `Module` properties.
+    fn test_generic_properties() {
+        let mut module = Module::new("mod_test");
+        let module_disabled = Module::new_disabled("mod_disabled");
+        let module_with_config = Module::with_config("mod_configured", true, Value::from(42));
+
+        assert_eq!(module.name(), "mod_test");
+        assert_eq!(module.location(), None);
+        assert_eq!(module.enabled(), true);
+        assert_eq!(module.config(), None);
+
+        assert_eq!(module_disabled.name(), "mod_disabled");
+        assert_eq!(module_disabled.location(), None);
+        assert_eq!(module_disabled.enabled(), false);
+        assert_eq!(module_disabled.config(), None);
+
+        assert_eq!(module_with_config.name(), "mod_configured");
+        assert_eq!(module_with_config.location(), None);
+        assert_eq!(module_with_config.enabled(), true);
+        assert_eq!(module_with_config.config(), Some(&Value::from(42)));
+
+        module.set_location("./target/debug/mod_test.dll");
+        let location = module.location().unwrap().to_str().unwrap();
+        assert_eq!(location, "./target/debug/mod_test.dll");
+        module.clear_location();
+        assert_eq!(module.location(), None);
+
+        module.disable();
+        assert_eq!(module.enabled(), false);
+        module.enable();
+        assert_eq!(module.enabled(), true);
+    }
+
+    #[test]
+    /// Tests module loading.
+    fn test_module_load_into() {
+        check_test_module_exist();
+        let module = Module::new("mod_test");
+        let mut lms = LoadedModuleSet::new("./target/debug/");
+
+        module.load_into(&mut lms).unwrap();
+    }
+
+    #[test]
+    /// Tests module validation.
+    fn test_module_validation() {
+        let validator = PathBuf::from_str("./target/debug/").unwrap();
+        let module = Module::new("mod_test");
+        let mut events: Vec<Event> = Vec::new();
+
+        validator.validate(&mut events, &module).unwrap();
+    }
+
+    #[test]
+    /// Tests module validation resulting in error.
+    fn test_err_module_validation() {
+        check_test_module_exist();
+        let validator = PathBuf::from_str("./target/debug/").unwrap();
+        let configuration = Value::from("test_error");
+        let module = Module::with_config("mod_test", true, configuration);
+        let mut events: Vec<Event> = Vec::new();
+
+        assert!(validator.validate(&mut events, &module).is_err());
     }
 }
