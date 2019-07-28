@@ -22,6 +22,7 @@ pub mod prelude {
 
     pub use crate::MammothInterface;
     pub use crate::error::Error;
+    pub use crate::error::severity::Severity;
     pub use crate::log::{Log, Logger, AsyncLoggerReference};
 
     pub use toml::Value;

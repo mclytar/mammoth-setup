@@ -1,7 +1,5 @@
-#![feature(custom_attribute)]
-
 use mammoth_macro::mammoth_module;
-use mammoth_setup::MammothInterface;
+use mammoth_setup::prelude::*;
 
 fn constructor(cfg: Option<toml::Value>) -> Module {
     let cfg = cfg.unwrap();
@@ -19,7 +17,19 @@ pub struct Module {
 }
 
 impl MammothInterface for Module {
-    /* implementation */
+    fn on_validation(&self, _: &mut Logger) -> Result<(), Error> {
+        unimplemented!()
+    }
+}
+
+impl Log for Module {
+    fn register_logger(&mut self, _: AsyncLoggerReference) {
+        unimplemented!()
+    }
+
+    fn retrieve_logger(&self) -> Option<AsyncLoggerReference> {
+        unimplemented!()
+    }
 }
 
 #[test]
@@ -29,15 +39,12 @@ fn test_constructor() {
     y = 121
     "#;
     let cfg = Some(toml::from_str(t).unwrap());
-    let m = __construct(cfg);
-
-    assert_eq!(m.x, 73);
-    assert_eq!(m.y, 121);
+    let _ = __construct(cfg);
 }
 
 #[test]
 fn test_version() {
     let v = __version();
 
-    assert_eq!(v, semver::Version::new(0,0,1));
+    assert!(mammoth_setup::version::compatible(&v));
 }

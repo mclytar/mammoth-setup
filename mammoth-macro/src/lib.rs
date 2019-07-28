@@ -22,7 +22,7 @@ pub fn mammoth_module(attr: TokenStream, item: TokenStream) -> TokenStream {
 
         #[no_mangle]
         pub extern fn __version() -> semver::Version {
-            semver::Version::new(0,0,1)
+            mammoth_setup::version::version()
         }
 
         #[no_mangle]

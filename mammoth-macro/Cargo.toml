@@ -7,7 +7,7 @@ edition = "2018"
 description = "Mammoth web-server macro crate."
 license = "MIT"
 readme = "README.md"
-# repository = "https://github.com/mclytar/mammoth-macro"
+repository = "https://github.com/mclytar/mammoth-macro"
 
 [lib]
 proc-macro = true
@@ -18,5 +18,5 @@ semver = "^0.9"
 syn = { version = "^0.15", features = ["full"] }
 
 [dev-dependencies]
-mammoth-setup = { version = "0.0.0", path = "../" }
+mammoth-setup = { version = ">=0.0.0", path = "../" }
 toml = "^0.5"

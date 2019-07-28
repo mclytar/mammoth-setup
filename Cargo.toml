@@ -15,7 +15,7 @@ repository = "https://github.com/mclytar/mammoth-setup"
 members = [
     ".",
     "mammoth-macro",
-    # "mod-test"
+    "mod-test"
 ]
 
 [features]
