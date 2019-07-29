@@ -5,7 +5,7 @@ Project 'Mammoth' is an attempt to create an easy-to-use web server _executable_
 This repository/crate is the backend library of Mammoth and contains
 all the logic and server implementations.
 
-The project is based on the [actix-web](https://github.com/actix/actix-web) framework.
+The project uses the [actix-web](https://github.com/actix/actix-web) framework.
 
 ## To-Do list
 
@@ -13,16 +13,15 @@ This is the initial To-Do list for the project.
 Items beginning with [...] have more hidden/non-definitive sub-tasks, possibly depending on the previous tasks.
 
 - [x] Add a `TOML` prototype of the possible configuration file.
-- [ ] Add the basic definitions for the configuration file.
+- [x] Add the basic definitions for the configuration file.
     - [x] Complete `error/severity`.
     - [x] Complete `config`.
     - [x] Complete `config/host`.
     - [x] Complete `config/mammoth`.
     - [x] Complete `config/module`.
     - [x] Complete `config/port`.
-    - [ ] Finalize.
-        - [ ] Complete and finalize the (first version of the) `MammothInterface` trait definition (needed in order to construct libraries to perform tests).
-    - [ ] Version 0.0.1.
+    - [x] Finalize.
+    - [x] Version 0.0.1.
 - [ ] Add error management.
     - [x] Add `Log` and `Logger` traits.
     - [x] Add `Validate` trait.
@@ -46,13 +45,6 @@ Although I did some tests and experiments before, this project is at a very init
 and I am working at it in my spare time, therefore its development can be very discontinuous.
 
 This repository starts as an "official" refactor of some previous attempts and sketches.
-
-### Crate `failure`
-
-I am currently using the crate `failure` in order to have a simple-but-efficient error handling.
-Since the project is growing much and errors can come from several situation,
-I plan to replace the generic `failure`-based errors with a more specific ad-hoc `Error` structure.
-This will be done once the project reaches a "stable alpha" version (i.e. almost 0.1.0).
 
 ### Modules
 

@@ -1,6 +1,6 @@
 [package]
 name = "mammoth-setup"
-version = "0.0.0"
+version = "0.0.1"
 authors = ["Gianluca (mclytar)"]
 edition = "2018"
 
