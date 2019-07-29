@@ -1,8 +1,8 @@
+use std::any::Any;
 use std::sync::{Arc, RwLock};
 
 use crate::error::event::Event;
 use crate::error::severity::Severity;
-use std::any::Any;
 
 pub type AsyncLoggerReference = Arc<RwLock<Logger>>;
 

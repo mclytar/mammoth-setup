@@ -36,7 +36,7 @@ impl Validator<&Path> for PathValidator {
                 logger.log(severity, &desc);
                 if severity >= Severity::Error { Err(Error::FileNotFound(item.to_path_buf()))?; }
             }
-            PathValidatorKind::FilePath => if !item.is_file() {
+            PathValidatorKind::FilePath => if item.is_dir() {
                 let desc = format!("Not a valid file path: '{:?}'.", item);
                 logger.log(severity, &desc);
                 if severity >= Severity::Error { Err(Error::InvalidFilePath(item.to_path_buf()))?; }

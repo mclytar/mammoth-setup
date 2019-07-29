@@ -7,6 +7,7 @@ pub mod module;
 
 use std::io::Read;
 use std::fs::File;
+use std::marker::PhantomData;
 use std::path::Path;
 
 use toml::Value;
@@ -19,10 +20,6 @@ use crate::validation::{Validator, IdValidator};
 use crate::log::Logger;
 use crate::error::Error;
 use crate::error::severity::Severity;
-use serde::export::PhantomData;
-
-// FOR_LATER: Add tests.
-// FOR_LATER: Remove `failure` crate dependency.
 
 /// Structure that contains all the configuration for the Mammoth application.
 #[derive(Clone, Debug, Deserialize)]
@@ -40,7 +37,7 @@ fn default_mods() -> Vec<Module> { Vec::new() }
 
 impl ConfigurationFile {
     /// Creates a `ConfigurationFile` structure given a TOML file.
-    pub fn from_file<P>(path: P) -> Result<ConfigurationFile, failure::Error>
+    pub fn from_file<P>(path: P) -> Result<ConfigurationFile, Error>
         where
             P: AsRef<Path>
     {
@@ -52,7 +49,7 @@ impl ConfigurationFile {
         Ok(toml::from_str(&contents)?)
     }
     /// Creates a `ConfigurationFile` structure given a TOML string.
-    pub fn from_str(contents: &str) -> Result<ConfigurationFile, failure::Error> {
+    pub fn from_str(contents: &str) -> Result<ConfigurationFile, Error> {
         Ok(toml::from_str(contents)?)
     }
     /// Obtains the underlying `Mammoth` structure.
@@ -79,7 +76,7 @@ impl ConfigurationFile {
         self.hosts.retain(|h| !h.is(&id));
     }
     /// Returns `true` if the current structure has the specified host and `false` otherwise.
-    pub fn has_host(&mut self, id: HostIdentifier) -> bool {
+    pub fn has_host(&self, id: HostIdentifier) -> bool {
         self.hosts.iter().position(|h| h.is(&id)).is_some()
     }
 
@@ -130,5 +127,135 @@ impl Validator<ConfigurationFile> for () {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::config::{ConfigurationFile, HostIdentifier};
+    use crate::error::Error;
+    use crate::error::event::Event;
+    use crate::validation::Validator;
+
+    #[test]
+    /// Tests a common configuration file.
+    fn test_config() {
+        let configuration = ConfigurationFile::from_file("./tests/test_config.toml").unwrap();
+        let mut events: Vec<Event> = Vec::new();
+
+        ().validate(&mut events, &configuration).unwrap();
+    }
+
+    #[test]
+    /// Tests a common configuration file with an error flag set in the configuration of the `mod_test` module.
+    fn test_config_bad_mod() {
+        let configuration = ConfigurationFile::from_file("./tests/test_config_bad_mod.toml").unwrap();
+        let mut events: Vec<Event> = Vec::new();
+
+        let err = ().validate(&mut events, &configuration).unwrap_err();
+
+        match err {
+            Error::Unknown => {},
+            _ => { panic!("Should be 'Unknown' error generated in module validation."); }
+        }
+    }
+
+    #[test]
+    /// Tests a minimal configuration TOML.
+    fn test_config_minimal() {
+        let toml = r##"
+        [mammoth]
+
+        [[host]]
+        listen = 8080
+        "##;
+        let configuration = ConfigurationFile::from_str(toml).unwrap();
+        let mut events: Vec<Event> = Vec::new();
+
+        ().validate(&mut events, &configuration).unwrap();
+    }
+
+    #[test]
+    /// Tests for the `NoModsDir` error when a module is specified without specifying the modules directory.
+    fn test_config_no_mod_error() {
+        let toml = r##"
+        [mammoth]
+
+        [[host]]
+        listen = 8080
+
+        [[mod]]
+        name = "mod_test"
+        "##;
+        let configuration = ConfigurationFile::from_str(toml).unwrap();
+        let mut events: Vec<Event> = Vec::new();
+
+        let err = ().validate(&mut events, &configuration).unwrap_err();
+
+        match err {
+            Error::NoModsDir => {},
+            _ => { panic!("Should be 'NoModsDir' error."); }
+        }
+    }
+
+    #[test]
+    /// Tests the `has_host` and `remove_host` functions.
+    fn test_hosts() {
+        let toml = r##"
+        [mammoth]
+
+        [[host]]
+        hostname = "localhost"
+        listen = 8080
+
+        [[host]]
+        hostname = "127.0.0.1"
+        listen = 8080
+
+        [[host]]
+        listen = 8080
+
+        [[host]]
+        listen = 8088
+        "##;
+        let mut configuration = ConfigurationFile::from_str(toml).unwrap();
+
+        assert!(configuration.has_host(HostIdentifier::new(8080, Some("localhost"))));
+        assert!(configuration.has_host(HostIdentifier::new(8080, Some("127.0.0.1"))));
+        assert!(configuration.has_host(HostIdentifier::new(8080, None)));
+
+        assert!(!configuration.has_host(HostIdentifier::new(8443, Some("localhost"))));
+        assert!(!configuration.has_host(HostIdentifier::new(8443, None)));
+        assert!(!configuration.has_host(HostIdentifier::new(8080, Some("0.0.0.0"))));
+
+        assert!(configuration.has_host(HostIdentifier::new(8088, None)));
+        configuration.remove_host(HostIdentifier::new(8088, None));
+        assert!(!configuration.has_host(HostIdentifier::new(8088, None)));
+    }
+
+    #[test]
+    /// Tests the `has_module` and `remove_mod` functions.
+    fn test_mods() {
+        let toml = r##"
+        [mammoth]
+        mods_dir = "./mods/"
+
+        [[host]]
+        listen = 8080
+
+        [[mod]]
+        name = "mod_test"
+
+        [[mod]]
+        name = "mod_dummy"
+        "##;
+        let mut configuration = ConfigurationFile::from_str(toml).unwrap();
+
+        assert!(configuration.has_module("mod_test"));
+        assert!(!configuration.has_module("mod_nope"));
+
+        assert!(configuration.has_module("mod_dummy"));
+        configuration.remove_mod("mod_dummy");
+        assert!(!configuration.has_module("mod_dummy"));
     }
 }

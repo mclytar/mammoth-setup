@@ -24,6 +24,7 @@ pub enum Error {
     NoModsDir,
     SecureBindOnInsecure,
     Ssl(SslError),
+    Toml(toml::de::Error),
     Unknown,
 }
 
@@ -42,6 +43,7 @@ impl Display for Error {
             Error::NoModsDir => write!(f, "No directory specified for modules; required if modules are enabled."),
             Error::SecureBindOnInsecure => write!(f, "Tried to bind to a secure port without a certificate"),
             Error::Ssl(stack) => write!(f, "SSL error: {}", stack),
+            Error::Toml(err) => write!(f, "TOML error: {}", err),
             Error::Unknown => write!(f, "Unknown"),
         }
     }
@@ -62,6 +64,7 @@ impl ErrorTrait for Error {
             Error::NoModsDir => "no mods_dir",
             Error::SecureBindOnInsecure => "secure binding without certificate",
             Error::Ssl(_) => "ssl error",
+            Error::Toml(_) => "toml error",
             Error::Unknown => "unknown"
         }
     }
@@ -76,5 +79,11 @@ impl From<IoError> for Error {
 impl From<SslError> for Error {
     fn from(err: SslError) -> Self {
         Error::Ssl(err)
+    }
+}
+
+impl From<toml::de::Error> for Error {
+    fn from(err: toml::de::Error) -> Self {
+        Error::Toml(err)
     }
 }

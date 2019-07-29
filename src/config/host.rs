@@ -293,7 +293,7 @@ mod test {
         use crate::validation::Validator;
         use std::str::FromStr;
         let host = Host::new(80);
-        let host_ssl = Host::with_security(443, "./test_cert.pem", "./test_key.pem");
+        let host_ssl = Host::with_security(443, "./tests/test_cert.pem", "./tests/test_key.pem");
         let host_err = Host::with_security(443, "./err_cert.pem", "./err_key.pem");
         let mut host_named = Host::new(80);
         let mut host_named_err = Host::new(80);

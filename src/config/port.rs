@@ -414,7 +414,7 @@ mod test {
     fn test_ssl_acceptor() {
         // Generate a ssl key/cert pair with the following command:
         // openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=localhost"
-        let param_ssl = Binding::with_security(8443, "./test_cert.pem", "./test_key.pem");
+        let param_ssl = Binding::with_security(8443, "./tests/test_cert.pem", "./tests/test_key.pem");
         let _ = param_ssl.ssl_acceptor().unwrap();
     }
 
@@ -424,8 +424,8 @@ mod test {
         use crate::validation::Validator;
 
         let param = Binding::new(80);
-        let param_ssl = Binding::with_security(8443, "./test_cert.pem", "./test_key.pem");
-        let param_err = Binding::with_security(8443, "./err_cert.pem", "./err_key.pem");
+        let param_ssl = Binding::with_security(8443, "./tests/test_cert.pem", "./tests/test_key.pem");
+        let param_err = Binding::with_security(8443, "./tests/err_cert.pem", "./tests/err_key.pem");
         let mut events: Vec<Event> = Vec::new();
 
         assert!(().validate(&mut events, &param).is_ok());
