@@ -13,11 +13,9 @@ use regex::Regex;
 
 use crate::config::module::Module;
 use crate::config::port::Binding;
+use crate::diagnostics::{Id, IdValidator, Logger, PathValidator, PathValidatorKind, Validator};
 use crate::error::Error;
 use crate::error::severity::Severity;
-use crate::diagnostics::Id;
-use crate::diagnostics::Logger;
-use crate::diagnostics::{Validator, IdValidator, PathValidator, PathValidatorKind};
 
 const REGEX_NAME_ADDRESS_STRING: &str = r#"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"#;
 const REGEX_IP_ADDRESS_STRING: &str = r#"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"#;

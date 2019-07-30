@@ -271,12 +271,13 @@ impl<I, V> Validator<Vec<&I>> for IdValidator<I, V>
 
 #[cfg(test)]
 mod tests {
+    use std::io::{Read, Seek, SeekFrom};
+    use std::path::Path;
     use std::sync::{Arc, RwLock};
+
     use crate::diagnostics::{Logger, LogEntity, PathValidator, PathValidatorKind, Validator};
     use crate::error::severity::Severity;
-    use std::io::{Read, Seek, SeekFrom};
     use crate::error::event::Event;
-    use std::path::Path;
 
     #[test]
     /// Tests the `LogEntity` structure using a temporary file.

@@ -2,10 +2,9 @@
 //! the modules and the log settings.
 use std::path::{Path, PathBuf};
 
+use crate::diagnostics::{Logger, PathValidator, PathValidatorKind, Validator};
 use crate::error::Error;
 use crate::error::severity::Severity;
-use crate::diagnostics::Logger;
-use crate::diagnostics::{Validator, PathValidator, PathValidatorKind};
 
 /// Structure that defines the general configuration for the Mammoth application.
 #[derive(Clone, Debug, Deserialize)]

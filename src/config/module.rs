@@ -6,8 +6,8 @@
 //! The simplest module is as follows.
 //! ```rust
 //! use mammoth_setup::MammothInterface;
-//! use mammoth_setup::error::Error;
 //! use mammoth_setup::diagnostics::{Log, Logger};
+//! use mammoth_setup::error::Error;
 //! use toml::Value;
 //!
 //! struct LibraryModule {
@@ -53,12 +53,10 @@ use semver::{Version, VersionReq};
 use toml::Value;
 
 use crate::MammothInterface;
+use crate::loaded::library::LoadedModuleSet;
+use crate::diagnostics::{Id, Logger, Validator};
 use crate::error::Error;
 use crate::error::severity::Severity;
-use crate::diagnostics::Id;
-use crate::loaded::library::LoadedModuleSet;
-use crate::diagnostics::Logger;
-use crate::diagnostics::Validator;
 use crate::version;
 
 /// Structure that defines configuration for a module library.

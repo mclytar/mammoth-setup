@@ -7,10 +7,9 @@ use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use serde::{Deserialize, Deserializer};
 use serde::de::{MapAccess, Visitor};
 
+use crate::diagnostics::{Logger, PathValidator, PathValidatorKind, Validator};
 use crate::error::Error;
 use crate::error::severity::Severity;
-use crate::diagnostics::Logger;
-use crate::diagnostics::{Validator, PathValidator, PathValidatorKind};
 
 /// Structure that defines configuration for a binding port.
 #[derive(Clone, Debug, PartialEq)]

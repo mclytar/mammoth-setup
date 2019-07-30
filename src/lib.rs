@@ -11,8 +11,8 @@ pub mod version;
 
 use std::any::Any;
 
-use crate::error::Error;
 use crate::diagnostics::{Log, Logger};
+use crate::error::Error;
 
 pub mod prelude {
     #[cfg(feature = "mammoth_module")]

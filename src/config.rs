@@ -5,6 +5,11 @@ pub mod mammoth;
 pub mod port;
 pub mod module;
 
+pub use self::host::Host;
+pub use self::host::HostIdentifier;
+pub use self::mammoth::Mammoth;
+pub use self::module::Module;
+
 use std::io::Read;
 use std::fs::File;
 use std::marker::PhantomData;
@@ -12,12 +17,7 @@ use std::path::Path;
 
 use toml::Value;
 
-pub use self::host::Host;
-pub use self::host::HostIdentifier;
-pub use self::mammoth::Mammoth;
-pub use self::module::Module;
-use crate::diagnostics::{Validator, IdValidator};
-use crate::diagnostics::Logger;
+use crate::diagnostics::{IdValidator, Logger, Validator};
 use crate::error::Error;
 use crate::error::severity::Severity;
 
