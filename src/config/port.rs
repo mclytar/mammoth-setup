@@ -9,8 +9,8 @@ use serde::de::{MapAccess, Visitor};
 
 use crate::error::Error;
 use crate::error::severity::Severity;
-use crate::log::Logger;
-use crate::validation::{Validator, PathValidator, PathValidatorKind};
+use crate::diagnostics::Logger;
+use crate::diagnostics::{Validator, PathValidator, PathValidatorKind};
 
 /// Structure that defines configuration for a binding port.
 #[derive(Clone, Debug, PartialEq)]
@@ -421,7 +421,7 @@ mod test {
     #[test]
     /// Tests the `Validate` trait implementation.
     fn test_validate() {
-        use crate::validation::Validator;
+        use crate::diagnostics::Validator;
 
         let param = Binding::new(80);
         let param_ssl = Binding::with_security(8443, "./tests/test_cert.pem", "./tests/test_key.pem");

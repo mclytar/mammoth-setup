@@ -5,7 +5,7 @@ use libloading::Library;
 
 use crate::MammothInterface;
 use crate::error::Error;
-use crate::id::Id;
+use crate::diagnostics::Id;
 
 pub struct LoadedLibrary {
     pub path: PathBuf,

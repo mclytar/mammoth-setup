@@ -7,7 +7,7 @@
 //! ```rust
 //! use mammoth_setup::MammothInterface;
 //! use mammoth_setup::error::Error;
-//! use mammoth_setup::log::{Log, Logger};
+//! use mammoth_setup::diagnostics::{Log, Logger};
 //! use toml::Value;
 //!
 //! struct LibraryModule {
@@ -55,10 +55,10 @@ use toml::Value;
 use crate::MammothInterface;
 use crate::error::Error;
 use crate::error::severity::Severity;
-use crate::id::Id;
+use crate::diagnostics::Id;
 use crate::loaded::library::LoadedModuleSet;
-use crate::log::Logger;
-use crate::validation::Validator;
+use crate::diagnostics::Logger;
+use crate::diagnostics::Validator;
 use crate::version;
 
 /// Structure that defines configuration for a module library.
@@ -240,7 +240,7 @@ mod test {
     use crate::config::Module;
     use crate::error::event::Event;
     use crate::loaded::library::LoadedModuleSet;
-    use crate::validation::Validator;
+    use crate::diagnostics::Validator;
 
     /// Checks if the needed module is available for testing.
     fn check_test_module_exist() {

@@ -4,17 +4,15 @@ extern crate lazy_static;
 extern crate serde_derive;
 
 pub mod config;
+pub mod diagnostics;
 pub mod error;
-pub mod id;
 pub mod loaded;
-pub mod log;
-pub mod validation;
 pub mod version;
 
 use std::any::Any;
 
 use crate::error::Error;
-use crate::log::{Log, Logger};
+use crate::diagnostics::{Log, Logger};
 
 pub mod prelude {
     #[cfg(feature = "mammoth_module")]
@@ -23,7 +21,7 @@ pub mod prelude {
     pub use crate::MammothInterface;
     pub use crate::error::Error;
     pub use crate::error::severity::Severity;
-    pub use crate::log::{Log, Logger, AsyncLoggerReference};
+    pub use crate::diagnostics::{Log, Logger, AsyncLoggerReference};
 
     pub use toml::Value;
     pub use semver;

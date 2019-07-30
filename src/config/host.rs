@@ -15,9 +15,9 @@ use crate::config::module::Module;
 use crate::config::port::Binding;
 use crate::error::Error;
 use crate::error::severity::Severity;
-use crate::id::Id;
-use crate::log::Logger;
-use crate::validation::{Validator, IdValidator, PathValidator, PathValidatorKind};
+use crate::diagnostics::Id;
+use crate::diagnostics::Logger;
+use crate::diagnostics::{Validator, IdValidator, PathValidator, PathValidatorKind};
 
 const REGEX_NAME_ADDRESS_STRING: &str = r#"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"#;
 const REGEX_IP_ADDRESS_STRING: &str = r#"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"#;
@@ -201,7 +201,7 @@ impl Validator<Host> for PathBuf {
         }
 
         if let Some(serving_dir) = item.serving_dir() {
-            PathValidator(Severity::Error, PathValidatorKind::DirectoryPath)
+            PathValidator(Severity::Error, PathValidatorKind::ExistingDirectory)
                 .validate(logger, &serving_dir)?;
         }
 
@@ -290,7 +290,7 @@ mod test {
     #[test]
     /// Tests the `validate` function.
     fn test_validate() {
-        use crate::validation::Validator;
+        use crate::diagnostics::Validator;
         use std::str::FromStr;
         let host = Host::new(80);
         let host_ssl = Host::with_security(443, "./tests/test_cert.pem", "./tests/test_key.pem");

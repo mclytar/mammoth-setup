@@ -16,8 +16,8 @@ pub use self::host::Host;
 pub use self::host::HostIdentifier;
 pub use self::mammoth::Mammoth;
 pub use self::module::Module;
-use crate::validation::{Validator, IdValidator};
-use crate::log::Logger;
+use crate::diagnostics::{Validator, IdValidator};
+use crate::diagnostics::Logger;
 use crate::error::Error;
 use crate::error::severity::Severity;
 
@@ -135,7 +135,7 @@ mod tests {
     use crate::config::{ConfigurationFile, HostIdentifier};
     use crate::error::Error;
     use crate::error::event::Event;
-    use crate::validation::Validator;
+    use crate::diagnostics::Validator;
 
     #[test]
     /// Tests a common configuration file.

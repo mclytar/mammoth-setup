@@ -4,8 +4,8 @@ use std::path::{Path, PathBuf};
 
 use crate::error::Error;
 use crate::error::severity::Severity;
-use crate::log::Logger;
-use crate::validation::{Validator, PathValidator, PathValidatorKind};
+use crate::diagnostics::Logger;
+use crate::diagnostics::{Validator, PathValidator, PathValidatorKind};
 
 /// Structure that defines the general configuration for the Mammoth application.
 #[derive(Clone, Debug, Deserialize)]
@@ -62,7 +62,7 @@ impl Mammoth {
 impl Validator<Mammoth> for () {
     fn validate(&self, logger: &mut Logger, item: &Mammoth) -> Result<(), Error> {
         if let Some(mods_dir) = item.mods_dir() {
-            PathValidator(Severity::Error, PathValidatorKind::DirectoryPath)
+            PathValidator(Severity::Error, PathValidatorKind::ExistingDirectory)
                 .validate(logger, &mods_dir)?;
         }
         if let Some(log_file) = item.log_file() {
