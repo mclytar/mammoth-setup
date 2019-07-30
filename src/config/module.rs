@@ -245,14 +245,6 @@ mod test {
     use crate::loaded::library::LoadedModuleSet;
     use crate::diagnostics::Validator;
 
-    /// Checks if the needed module is available for testing.
-    fn check_test_module_exist() {
-        let path = PathBuf::from_str("./target/debug/mod_test.dll").unwrap();
-        if !path.exists() {
-            unimplemented!("test library 'mod_test' does not exist.");
-        }
-    }
-
     #[test]
     /// Tests `Module` properties.
     fn test_generic_properties() {
@@ -290,7 +282,6 @@ mod test {
     #[test]
     /// Tests module loading.
     fn test_module_load_into() {
-        check_test_module_exist();
         let module = Module::new("mod_test");
         let mut lms = LoadedModuleSet::new("./target/debug/");
 
@@ -310,7 +301,6 @@ mod test {
     #[test]
     /// Tests module validation resulting in error.
     fn test_err_module_validation() {
-        check_test_module_exist();
         let validator = PathBuf::from_str("./target/debug/").unwrap();
         let configuration = Value::from("test_error");
         let module = Module::with_config("mod_test", true, configuration);
