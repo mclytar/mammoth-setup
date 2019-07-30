@@ -4,6 +4,7 @@ use std::sync::Arc;
 use libloading::Library;
 
 use crate::MammothInterface;
+use crate::config::module::DYLIB_EXT;
 use crate::error::Error;
 use crate::diagnostics::Id;
 
@@ -64,7 +65,7 @@ impl LoadedModuleSet {
 
     pub fn lib_path(&self, name: &str) -> PathBuf
     {
-        self.default_path.join(name.to_owned() + ".dll")
+        self.default_path.join(name.to_owned() + DYLIB_EXT)
     }
 
     pub fn insert(&mut self, name: &str, interface: Arc<Box<MammothInterface>>) {

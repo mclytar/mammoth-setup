@@ -59,6 +59,11 @@ use crate::error::Error;
 use crate::error::severity::Severity;
 use crate::version;
 
+#[cfg(target_os="windows")]
+pub(crate) const DYLIB_EXT: &str = ".dll";
+#[cfg(target_os="linux")]
+pub(crate) const DYLIB_EXT: &str = ".so";
+
 /// Structure that defines configuration for a module library.
 #[derive(Clone, Debug, Deserialize)]
 pub struct Module {
@@ -197,7 +202,7 @@ impl Validator<Module> for PathBuf {
         let filename = if let Some(filename) = item.location() {
             filename.to_path_buf()
         } else {
-            self.join(item.name().to_owned() + ".dll")
+            self.join(item.name().to_owned() + DYLIB_EXT)
         };
         let lib = Library::new(&filename)?;
         let ver: Version = unsafe {
